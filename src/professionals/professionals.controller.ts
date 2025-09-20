@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { ProfessionalsService } from './professionals.service';
+import { CreateProfessionalDto } from './dto/create-professional.dto';
 
 @Controller('professionals')
 export class ProfessionalsController {
@@ -11,7 +12,7 @@ export class ProfessionalsController {
   }
 
   @Post()
-  create(@Body() createProfessionalDto: any) {
+  create(@Body() createProfessionalDto: CreateProfessionalDto) {
     return this.professionalsService.create(createProfessionalDto);
   }
 }

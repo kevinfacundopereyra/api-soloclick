@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Professional } from './schemas/professional.schema';
+import { CreateProfessionalDto } from './dto/create-professional.dto';
 
 @Injectable()
 export class ProfessionalsService {
@@ -14,7 +15,9 @@ export class ProfessionalsService {
     return this.professionalModel.find().exec();
   }
 
-  async create(createProfessionalDto: any): Promise<Professional> {
+  async create(
+    createProfessionalDto: CreateProfessionalDto,
+  ): Promise<Professional> {
     const createdProfessional = new this.professionalModel(
       createProfessionalDto,
     );
