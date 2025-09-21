@@ -16,7 +16,7 @@ import { Appointment, AppointmentSchema } from './schemas/appointment.schema';
 export class AppointmentsModule {}
  */
 
-import { Module } from '@nestjs/common';
+/* import { Module } from '@nestjs/common';
 import { AppointmentService } from './appointments.service';
 import { AppointmentsController } from './appointments.controller';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -31,6 +31,26 @@ import {
     MongooseModule.forFeature([
       { name: Appointment.name, schema: AppointmentSchema },
       { name: Professional.name, schema: ProfessionalSchema }, // 👈 agregado
+    ]),
+  ],
+  providers: [AppointmentService],
+  controllers: [AppointmentsController],
+})
+export class AppointmentsModule {}
+ */
+
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Appointment, AppointmentSchema } from './schemas/appointment.schema';
+import { AppointmentService } from './appointments.service';
+import { AppointmentsController } from './appointments.controller';
+import { Professional, ProfessionalSchema } from '../professionals/schemas/professional.schema';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: 'Appointment', schema: AppointmentSchema },
+      { name: 'Professional', schema: ProfessionalSchema },
     ]),
   ],
   providers: [AppointmentService],

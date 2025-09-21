@@ -1,4 +1,4 @@
-import { IsMongoId, IsDateString, IsOptional } from 'class-validator';
+/* import { IsMongoId, IsDateString, IsOptional } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsMongoId()
@@ -10,4 +10,12 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsMongoId()
   user?: string;
+} */
+
+import { IsMongoId, IsDateString, IsOptional } from 'class-validator';
+
+export class CreateAppointmentDto {
+  readonly user: string; // ID del usuario
+  readonly professional: string; // ID del profesional
+  readonly date: Date; // Fecha y hora de la cita
 }
