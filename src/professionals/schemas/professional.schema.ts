@@ -6,16 +6,16 @@ export class Professional extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
+  @Prop({ required: true })
   email: string;
 
-  @Prop()
+  @Prop({ required: true })
   phone: string;
 
-  @Prop()
+  @Prop({ required: true })
   city: string;
 
-  @Prop()
+  @Prop({ required: true })
   specialty: string;
 
   @Prop()
