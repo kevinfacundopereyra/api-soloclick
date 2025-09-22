@@ -9,6 +9,10 @@ export class User extends Document {
   @Prop({ required: true })
   email: string;
 
+  //Agregamos este prop por que nos olvidamos
+  @Prop({ required: true })
+  password: string;
+
   @Prop({ required: true })
   phone: string;
 
