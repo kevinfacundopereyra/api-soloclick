@@ -61,6 +61,18 @@ export class Appointment extends Document {
 
   @Prop({ required: true })
   duration: number; // minutos
+
+  @Prop({ default: 'pending' })
+  paymentStatus: 'pending' | 'paid_initial' | 'refunded' | 'paid_full';
+
+  @Prop({ default: 0 })
+  amountPaid: number;
+
+  @Prop()
+  mercadoPagoInitId?: string;
+
+  @Prop()
+  mercadoPagoFinalId?: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
