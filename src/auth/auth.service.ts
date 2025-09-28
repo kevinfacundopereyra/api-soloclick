@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { ProfessionalsService } from '../professionals/professionals.service';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
@@ -18,9 +19,33 @@ export class AuthService {
           email: user.email,
         },
         process.env.JWT_SECRET || 'default_secret',
-        { expiresIn: '1d' }
+        { expiresIn: '1d' },
       );
       return { user, token };
+    }
+    return { message: 'Credenciales inválidas' };
+  }
+}
+
+@Injectable()
+export class AuthProfessionalsService {
+  constructor(private readonly professionalsService: ProfessionalsService) {}
+
+  async loginprofecional(loginDto: any) {
+    const professional = await this.professionalsService.findById(loginDto.id);
+    if (professional && professional.password === loginDto.password) {
+      // Generar token JWT
+      const token = jwt.sign(
+        {
+          sub: professional._id,
+          name: professional.name,
+          userType: professional.userType,
+          email: professional.email,
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '1d' },
+      );
+      return { professional, token };
     }
     return { message: 'Credenciales inválidas' };
   }
