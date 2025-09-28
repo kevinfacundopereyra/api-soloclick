@@ -50,6 +50,12 @@ export class Professional extends Document {
 
   @Prop({ required: true, default: 60 }) // duración en minutos
   appointmentDuration: number;
+
+  @Prop()
+  description: string;
+
+  @Prop([String])
+  images: string[];
 }
 
 export const ProfessionalSchema = SchemaFactory.createForClass(Professional);

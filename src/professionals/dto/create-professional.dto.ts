@@ -5,6 +5,8 @@ import {
   IsNumber,
   Min,
   Max,
+  IsArray,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateProfessionalDto {
@@ -32,4 +34,12 @@ export class CreateProfessionalDto {
   @Min(0)
   @Max(5)
   readonly rating?: number;
+  @IsOptional()
+  @IsString()
+  readonly description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUrl({}, { each: true })
+  readonly images?: string[];
 }

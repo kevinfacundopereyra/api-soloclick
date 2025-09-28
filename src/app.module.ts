@@ -23,6 +23,7 @@ import { ProfessionalsModule } from './professionals/professionals.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { UsersModule } from './users/users.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { PaymentsModule } from './payments/payments.module';
     ProfessionalsModule,
     AppointmentsModule,
     UsersModule,
-      PaymentsModule,
+    PaymentsModule,
+    AuthModule,
   ],
   controllers: [AppController], // 👈 tiene que estar aquí
   providers: [AppService],
