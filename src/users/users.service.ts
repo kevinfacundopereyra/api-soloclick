@@ -15,8 +15,16 @@ export class UsersService {
   }
 
   async create(createUserDto: any): Promise<User> {
+    // Asignar userType por defecto si no se proporciona
+    if (!createUserDto.userType) {
+      createUserDto.userType = 'cliente'; // o el valor que corresponda
+    }
     const createdUser = new this.userModel(createUserDto);
     return createdUser.save();
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 }
  */
@@ -41,5 +49,9 @@ export class UsersService {
   async create(createUserDto: any): Promise<User> {
     const createdUser = new this.userModel(createUserDto);
     return createdUser.save();
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
   }
 }

@@ -32,4 +32,9 @@ export class UsersController {
   create(@Body() createUserDto: any) {
     return this.usersService.create(createUserDto);
   }
+
+  @Post('register')
+  register(@Body() createUserDto: any) {
+    return this.usersService.create(createUserDto);
+  }
 }
