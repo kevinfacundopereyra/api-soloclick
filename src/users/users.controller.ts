@@ -16,8 +16,9 @@ export class UserController {
   }
 } */
 
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpStatus, HttpCode } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -29,12 +30,14 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() createUserDto: any) {
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Post('register')
-  register(@Body() createUserDto: any) {
+  @HttpCode(HttpStatus.CREATED)
+  register(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 }

@@ -48,8 +48,14 @@ export class Professional extends Document {
   @Prop()
   rating: number;
 
+  @Prop({ required: true }) //Agregamos este prop por que nos olvidamos
+  password: string;
+
   @Prop({ required: true, default: 60 }) // duración en minutos
   appointmentDuration: number;
+
+  @Prop({ required: true }) //por las dudas
+  userType: string;
 
   @Prop()
   description: string;

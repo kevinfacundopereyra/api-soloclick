@@ -26,7 +26,7 @@ export class ProfessionalsService {
 }
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Professional } from './schemas/professional.schema';
@@ -52,8 +52,32 @@ export class ProfessionalsService {
   }
 
   async create(createProfessionalDto: CreateProfessionalDto): Promise<Professional> {
-    const professional = new this.professionalModel(createProfessionalDto);
-    return professional.save();
+    try {
+      // Verificar si el email ya existe (si se proporciona)
+      if (createProfessionalDto.email) {
+        const existingProfessional = await this.professionalModel.findOne({ 
+          email: createProfessionalDto.email 
+        });
+        if (existingProfessional) {
+          throw new ConflictException('Email already exists');
+        }
+      }
+
+      // Asignar automáticamente userType como 'profesional' y appointmentDuration por defecto
+      const professionalData = {
+        ...createProfessionalDto,
+        userType: 'profesional',
+        appointmentDuration: createProfessionalDto.appointmentDuration || 60
+      };
+
+      const professional = new this.professionalModel(professionalData);
+      return await professional.save();
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException('Error creating professional: ' + error.message);
+    }
   }
 
   async update(id: string, updateProfessionalDto: CreateProfessionalDto): Promise<Professional> {
