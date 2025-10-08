@@ -26,7 +26,12 @@ export class ProfessionalsService {
 }
  */
 
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Professional } from './schemas/professional.schema';
@@ -44,6 +49,14 @@ export class ProfessionalsService {
     return this.professionalModel.find().exec();
   }
 
+  async findByEmail(email: string): Promise<Professional | null> {
+    try {
+      return await this.professionalModel.findOne({ email }).exec();
+    } catch (error) {
+      throw new BadRequestException('Error finding professional by email');
+    }
+  }
+
   async findById(id: string): Promise<Professional> {
     const professional = await this.professionalModel.findById(id);
     if (!professional) {
@@ -52,12 +65,14 @@ export class ProfessionalsService {
     return professional;
   }
 
-  async create(createProfessionalDto: CreateProfessionalDto): Promise<{ professional: Professional; token: string }> {
+  async create(
+    createProfessionalDto: CreateProfessionalDto,
+  ): Promise<{ professional: Professional; token: string }> {
     try {
       // Verificar si el email ya existe (si se proporciona)
       if (createProfessionalDto.email) {
-        const existingProfessional = await this.professionalModel.findOne({ 
-          email: createProfessionalDto.email 
+        const existingProfessional = await this.professionalModel.findOne({
+          email: createProfessionalDto.email,
         });
         if (existingProfessional) {
           throw new ConflictException('Email already exists');
@@ -68,7 +83,7 @@ export class ProfessionalsService {
       const professionalData = {
         ...createProfessionalDto,
         userType: 'profesional',
-        appointmentDuration: createProfessionalDto.appointmentDuration || 60
+        appointmentDuration: createProfessionalDto.appointmentDuration || 60,
       };
 
       const professional = new this.professionalModel(professionalData);
@@ -91,11 +106,16 @@ export class ProfessionalsService {
       if (error instanceof ConflictException) {
         throw error;
       }
-      throw new BadRequestException('Error creating professional: ' + error.message);
+      throw new BadRequestException(
+        'Error creating professional: ' + error.message,
+      );
     }
   }
 
-  async update(id: string, updateProfessionalDto: CreateProfessionalDto): Promise<Professional> {
+  async update(
+    id: string,
+    updateProfessionalDto: CreateProfessionalDto,
+  ): Promise<Professional> {
     const updated = await this.professionalModel.findByIdAndUpdate(
       id,
       updateProfessionalDto,

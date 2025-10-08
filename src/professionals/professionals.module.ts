@@ -15,5 +15,6 @@ import {
   ],
   providers: [ProfessionalsService],
   controllers: [ProfessionalsController],
+  exports: [ProfessionalsService], // ← Exportar el servicio para que otros módulos puedan usarlo
 })
 export class ProfessionalsModule {}
