@@ -36,6 +36,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Professional } from './schemas/professional.schema';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
@@ -133,5 +134,98 @@ export class ProfessionalsService {
       throw new NotFoundException('Professional not found');
     }
     return deleted;
+  }
+
+  // Método para obtener el perfil del profesional logueado
+  async getProfile(id: string): Promise<Professional> {
+    try {
+      const professional = await this.professionalModel.findById(id);
+      if (!professional) {
+        throw new NotFoundException('Professional not found');
+      }
+      return professional;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error retrieving profile');
+    }
+  }
+
+  // Método para actualizar el perfil del profesional
+  async updateProfile(id: string, updateProfileDto: UpdateProfileDto): Promise<Professional> {
+    try {
+      const updateData: any = {};
+      
+      // Actualizar campos directos del perfil
+      if (updateProfileDto.description !== undefined) {
+        updateData.description = updateProfileDto.description;
+      }
+      if (updateProfileDto.address !== undefined) {
+        updateData.address = updateProfileDto.address;
+      }
+      if (updateProfileDto.workingHours) {
+        updateData.workingHours = updateProfileDto.workingHours;
+      }
+      if (updateProfileDto.images) {
+        updateData.images = updateProfileDto.images;
+      }
+
+      // Verificar si el perfil está completo
+      const professional = await this.professionalModel.findById(id);
+      if (professional) {
+        const isComplete = !!(
+          (updateProfileDto.description || professional.description) &&
+          (updateProfileDto.address || professional.address) &&
+          (updateProfileDto.workingHours || professional.workingHours)
+        );
+        updateData.profileCompleted = isComplete;
+      }
+
+      const updated = await this.professionalModel.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updated) {
+        throw new NotFoundException('Professional not found');
+      }
+
+      return updated;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error updating profile: ' + error.message);
+    }
+  }
+
+  // Método para subir imágenes al perfil
+  async uploadProfileImages(id: string, files: any[]): Promise<Professional> {
+    try {
+      // Aquí deberías implementar la lógica para subir archivos
+      // Por ahora, simularemos que los archivos se suben y devolvemos URLs
+      const imageUrls = files.map(file => `/uploads/${file.filename}`);
+
+      const updated = await this.professionalModel.findByIdAndUpdate(
+        id,
+        { 
+          $push: { images: { $each: imageUrls } }
+        },
+        { new: true }
+      );
+
+      if (!updated) {
+        throw new NotFoundException('Professional not found');
+      }
+
+      return updated;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error uploading images: ' + error.message);
+    }
   }
 }
