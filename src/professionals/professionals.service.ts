@@ -66,6 +66,15 @@ export class ProfessionalsService {
     return professional;
   }
 
+  // 09/10 Brian para filtrar profesionales por especialidad
+  async findBySpecialty(specialty: string): Promise<Professional[]> {
+    const professionals = await this.professionalModel.find({ specialty });
+    if (!professionals || professionals.length === 0) {
+      throw new NotFoundException('No professionals found for the given specialty');
+    }
+    return professionals;
+  }
+
   async create(
     createProfessionalDto: CreateProfessionalDto,
   ): Promise<{ professional: Professional; token: string }> {
