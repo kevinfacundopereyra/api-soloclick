@@ -18,21 +18,21 @@ export class ProfessionalsController {
 }
  */
 
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  Param, 
-  Put, 
-  Delete, 
-  UseGuards, 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
   Request,
   UseInterceptors,
   UploadedFiles,
   HttpCode,
   HttpStatus,
-  UnauthorizedException
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProfessionalsService } from './professionals.service';
@@ -54,13 +54,21 @@ export class ProfessionalsController {
     return this.professionalsService.findById(id);
   }
 
+  @Get('by-specialty/:specialty')
+  findBySpecialty(@Param('specialty') specialty: string) {
+    return this.professionalsService.findBySpecialty(specialty);
+  }
+
   @Post()
   create(@Body() createProfessionalDto: CreateProfessionalDto) {
     return this.professionalsService.create(createProfessionalDto);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateProfessionalDto: CreateProfessionalDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateProfessionalDto: CreateProfessionalDto,
+  ) {
     return this.professionalsService.update(id, updateProfessionalDto);
   }
 
@@ -79,8 +87,14 @@ export class ProfessionalsController {
   // PUT /professionals/profile - Completar/actualizar perfil
   @Put('profile')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.professionalsService.updateProfile(req.user.sub, updateProfileDto);
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.professionalsService.updateProfile(
+      req.user.sub,
+      updateProfileDto,
+    );
   }
 
   // POST /professionals/upload-images - Subir imágenes
@@ -95,8 +109,10 @@ export class ProfessionalsController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: { email: string; password: string }) {
-    const professional = await this.professionalsService.findByEmail(loginDto.email);
-    
+    const professional = await this.professionalsService.findByEmail(
+      loginDto.email,
+    );
+
     if (!professional || professional.password !== loginDto.password) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -114,9 +130,9 @@ export class ProfessionalsController {
       { expiresIn: '1d' },
     );
 
-    return { 
-      user: professional, 
-      token 
+    return {
+      user: professional,
+      token,
     };
   }
 }
