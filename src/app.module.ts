@@ -24,6 +24,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { UsersModule } from './users/users.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AuthModule } from './auth/auth.module';
+import { ServicesModule } from './services/services.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
     PaymentsModule,
     AuthModule,
+    ServicesModule,
   ],
   controllers: [AppController], // 👈 tiene que estar aquí
   providers: [AppService],
