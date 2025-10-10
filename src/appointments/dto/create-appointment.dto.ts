@@ -1,21 +1,44 @@
-/* import { IsMongoId, IsDateString, IsOptional } from 'class-validator';
+import {
+  IsMongoId,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  IsNumber,
+  IsString,
+} from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsMongoId()
-  professional: string;
-
-  @IsDateString()
-  date: Date;
-
   @IsOptional()
   @IsMongoId()
-  user?: string;
-} */
+  readonly user?: string; // ID del usuario (opcional, se puede obtener del token)
 
-import { IsMongoId, IsDateString, IsOptional } from 'class-validator';
+  @IsString()
+  professionalId: string;
 
-export class CreateAppointmentDto {
-  readonly user: string; // ID del usuario
-  readonly professional: string; // ID del profesional
-  readonly date: Date; // Fecha y hora de la cita
+  @IsOptional()
+  @IsString()
+  clientId?: string; // ✅ Campo opcional que envía el frontend
+
+  @IsOptional()
+  @IsString()
+  userId?: string; // ✅ Campo interno del backend
+
+  @IsArray()
+  services: string[];
+
+  @IsDateString()
+  date: string;
+
+  @IsString()
+  time: string; // ✅ Campo obligatorio
+
+  @IsNumber()
+  totalPrice: number;
+
+  @IsNumber()
+  totalDuration: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
