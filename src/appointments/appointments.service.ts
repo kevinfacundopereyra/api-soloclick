@@ -24,7 +24,11 @@ export class AppointmentService {
   ) {}
 
   async findAll(): Promise<Appointment[]> {
-    return this.appointmentModel.find().exec();
+    return this.appointmentModel
+      .find()
+      .populate('professional', 'name specialty city') // ✅ Datos del profesional
+      .populate('services', 'name price duration')     // ✅ Datos de los servicios
+      .exec();
   }
 
   async findByClient(clientId: string): Promise<Appointment[]> {
@@ -32,8 +36,8 @@ export class AppointmentService {
       .find({
         clientId: clientId, // o client: clientId según tu modelo
       })
-      .populate('professional')
-      .populate('services')
+      .populate('professional', 'name specialty city')
+      .populate('services', 'name price duration')
       .exec();
   }
 
@@ -158,6 +162,10 @@ export class AppointmentService {
   }
 
   async findByProfessional(professionalId: string): Promise<Appointment[]> {
-    return this.appointmentModel.find({ professional: professionalId }).exec();
+    return this.appointmentModel
+      .find({ professional: professionalId })
+      .populate('professional', 'name specialty city')
+      .populate('services', 'name price duration')
+      .exec();
   }
 }

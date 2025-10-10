@@ -1,7 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-@Schema()
+@Schema({
+  timestamps: true  // ✅ AGREGAR - Esto crea createdAt y updatedAt automáticamente
+})
 export class Appointment extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user?: string; // Opcional porque puede ser un invitado
