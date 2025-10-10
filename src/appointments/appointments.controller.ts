@@ -17,7 +17,6 @@ export class AppointmentsController {
 }
  */
 
-
 /* Segundo  guardado
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AppointmentService } from './appointments.service';
@@ -56,10 +55,27 @@ export class AppointmentsController {
     return this.appointmentService.findAll();
   }
 
+  // En appointments.controller.ts - en el método create:
+
   @Post()
   create(@Body() createAppointmentDto: CreateAppointmentDto) {
+    // ✅ AGREGAR - Mapear clientId a userId si viene
+    if (createAppointmentDto.clientId && !createAppointmentDto.userId) {
+      createAppointmentDto.userId = createAppointmentDto.clientId;
+    }
+
     return this.appointmentService.create(createAppointmentDto);
   }
+
+  @Get('client/:clientId') // GET /appointments/client/:clientId
+  findByClient(@Param('clientId') clientId: string) {
+    return this.appointmentService.findByClient(clientId);
+  }
+
+/*   @Post()
+  create(@Body() createAppointmentDto: CreateAppointmentDto) {
+    return this.appointmentService.create(createAppointmentDto);
+  } */
 
   @Delete(':id')
   remove(@Param('id') id: string) {

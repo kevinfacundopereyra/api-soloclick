@@ -1,71 +1,8 @@
-/* import { Injectable } from '@nestjs/common};
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Appointment } from './schemas/appointment.schema';
-
-@Injectable()
-export class AppointmentService {
-  constructor(
-    @InjectModel('Appointment')
-    private readonly appointmentModel: Model<Appointment>,
-  ) {}
-
-  async findAll(): Promise<Appointment[]> {
-    return this.appointmentModel.find().exec();
-  }
-
-  async create(createAppointmentDto: any): Promise<Appointment> {
-    const createdAppointmentDto = new this.appointmentModel(
-      createAppointmentDto,
-    );
-    return createdAppointmentDto.save();
-  }
- }
- */
-
-/* 
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Appointment } from './schemas/appointment.schema';
-import { Professional } from '../professionals/schemas/professional.schema';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
-
-@Injectable()
-export class AppointmentService {
-  constructor(
-    @InjectModel('Appointment')
-    private readonly appointmentModel: Model<Appointment>,
-    @InjectModel('Professional')
-    private readonly professionalModel: Model<Professional>,
-  ) {}
-
-  async findAll(): Promise<Appointment[]> {
-    return this.appointmentModel.find().exec();
-  }
-
-  async create(
-    createAppointmentDto: CreateAppointmentDto,
-  ): Promise<Appointment> {
-    const professional = await this.professionalModel.findById(
-      createAppointmentDto.professional,
-    );
-
-    if (!professional) {
-      throw new NotFoundException('Professional not found');
-    }
-
-    const appointment = new this.appointmentModel({
-      ...createAppointmentDto,
-      duration: professional.appointmentDuration, // 👈 ya queda guardada
-    });
-
-    return appointment.save();
-  }
- }
- */
-
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment } from './schemas/appointment.schema';
@@ -90,53 +27,123 @@ export class AppointmentService {
     return this.appointmentModel.find().exec();
   }
 
-  async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
-    const professionals = await this.professionalModel.findById(createAppointmentDto.professional);
-    if (!professionals) {
+  async findByClient(clientId: string): Promise<Appointment[]> {
+    return this.appointmentModel
+      .find({
+        clientId: clientId, // o client: clientId según tu modelo
+      })
+      .populate('professional')
+      .populate('services')
+      .exec();
+  }
+
+  async create(
+    createAppointmentDto: CreateAppointmentDto,
+  ): Promise<Appointment> {
+    const professional = await this.professionalModel.findById(
+      createAppointmentDto.professionalId,
+    );
+    if (!professional) {
       throw new NotFoundException('Professional not found');
     }
 
-    // Calcular inicio y fin de la cita
-    const startDate = new Date(createAppointmentDto.date);
-    const endDate = new Date(startDate.getTime() + professionals.appointmentDuration * 60000);
+    // Verificar si hay superposición de citas en la misma fecha
+    const appointmentDate = new Date(createAppointmentDto.date);
+    const [hours, minutes] = createAppointmentDto.time.split(':').map(Number);
+    const appointmentTime = hours * 60 + minutes; // Convertir a minutos
+    const endTime = appointmentTime + createAppointmentDto.totalDuration;
 
-    // Verificar si hay superposición de citas
     const overlapping = await this.appointmentModel.findOne({
-      professional: createAppointmentDto.professional,
-      $or: [
-        {
-          date: { $lt: endDate },
-          $expr: {
-            $gte: [
-              { $add: ['$date', professionals.appointmentDuration * 60000] },
-              startDate,
+      professional: createAppointmentDto.professionalId,
+      date: {
+        $gte: new Date(appointmentDate.setHours(0, 0, 0, 0)),
+        $lt: new Date(appointmentDate.setHours(23, 59, 59, 999)),
+      },
+      $expr: {
+        $let: {
+          vars: {
+            existingTime: {
+              $add: [
+                { $multiply: [{ $toInt: { $substr: ['$time', 0, 2] } }, 60] },
+                { $toInt: { $substr: ['$time', 3, 2] } },
+              ],
+            },
+            existingEndTime: {
+              $add: [
+                {
+                  $add: [
+                    {
+                      $multiply: [{ $toInt: { $substr: ['$time', 0, 2] } }, 60],
+                    },
+                    { $toInt: { $substr: ['$time', 3, 2] } },
+                  ],
+                },
+                '$totalDuration',
+              ],
+            },
+          },
+          in: {
+            $or: [
+              {
+                $and: [
+                  { $lte: ['$$existingTime', appointmentTime] },
+                  { $gt: ['$$existingEndTime', appointmentTime] },
+                ],
+              },
+              {
+                $and: [
+                  { $lt: ['$$existingTime', endTime] },
+                  { $gte: ['$$existingEndTime', endTime] },
+                ],
+              },
+              {
+                $and: [
+                  { $gte: ['$$existingTime', appointmentTime] },
+                  { $lte: ['$$existingEndTime', endTime] },
+                ],
+              },
             ],
           },
         },
-      ],
+      },
     });
 
     if (overlapping) {
-      throw new ConflictException('El profesional ya tiene una cita en ese horario');
+      throw new ConflictException(
+        'El profesional ya tiene una cita en ese horario',
+      );
     }
 
     const appointment = new this.appointmentModel({
-      ...createAppointmentDto,
-      duration: professionals.appointmentDuration,
+      user: createAppointmentDto.user,
+      professional: createAppointmentDto.professionalId,
+      services: createAppointmentDto.services,
+      date: new Date(createAppointmentDto.date), // Solo la fecha
+      time: createAppointmentDto.time, // La hora por separado
+      totalPrice: createAppointmentDto.totalPrice,
+      totalDuration: createAppointmentDto.totalDuration,
+      notes: createAppointmentDto.notes,
+      status: 'scheduled',
     });
 
     const saved = await appointment.save();
 
-    // Buscar emails
-    const user = await this.userModel.findById(saved.user);
-    const professional = await this.professionalModel.findById(saved.professional);
-
-    // Notificar por email
-    if (user?.email) {
-      await this.notificationsService.notifyUser(user.email, 'Tu cita fue agendada correctamente.');
+    // Buscar emails para notificaciones
+    if (saved.user) {
+      const user = await this.userModel.findById(saved.user);
+      if (user?.email) {
+        await this.notificationsService.notifyUser(
+          user.email,
+          'Tu cita fue agendada correctamente.',
+        );
+      }
     }
+
     if (professional?.email) {
-      await this.notificationsService.notifyProfessional(professional.email, 'Tienes una nueva cita agendada.');
+      await this.notificationsService.notifyProfessional(
+        professional.email,
+        'Tienes una nueva cita agendada.',
+      );
     }
 
     return saved;

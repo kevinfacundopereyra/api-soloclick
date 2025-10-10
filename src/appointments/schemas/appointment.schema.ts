@@ -1,66 +1,37 @@
-/* import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-@Schema()
-export class Appointment extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Professional', required: true })
-  professional: string;
-
-  @Prop({ type: Date, required: true })
-  date: Date;
-
-  @Prop({ default: false })
-  booked: boolean;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  user?: string;
-}
-
-export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
- */
-
-// Segundo guardado
-
-/* import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-
-@Schema()
-export class Appointment extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Professional', required: true })
-  professional: string;
-
-  @Prop({ type: Date, required: true })
-  date: Date;
-
-  @Prop({ default: false })
-  booked: boolean;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  user?: string;
-
-  @Prop({ required: true }) // duración en minutos
-  duration: number;
-}
-
-export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
- */
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 @Schema()
 export class Appointment extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: string;
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user?: string; // Opcional porque puede ser un invitado
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  clientId: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Professional', required: true })
   professional: string;
 
+  @Prop([String]) // Array de servicios
+  services: string[];
+
   @Prop({ required: true })
   date: Date;
 
+  @Prop({ required: true }) // Hora en formato string "14:30"
+  time: string; // Formato "14:30"
+
   @Prop({ required: true })
-  duration: number; // minutos
+  totalDuration: number; // Duración total en minutos
+
+  @Prop({ required: true })
+  totalPrice: number; // Precio total
+
+  @Prop()
+  notes?: string; // Notas opcionales
+
+  @Prop({ default: 'scheduled' })
+  status: 'scheduled' | 'completed' | 'cancelled';
 
   @Prop({ default: 'pending' })
   paymentStatus: 'pending' | 'paid_initial' | 'refunded' | 'paid_full';
