@@ -32,8 +32,8 @@ export class Appointment extends Document {
   @Prop()
   notes?: string; // Notas opcionales
 
-  @Prop({ default: 'scheduled' })
-  status: 'scheduled' | 'completed' | 'cancelled';
+  @Prop({ default: 'pending' })
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'scheduled';
 
   @Prop({ default: 'pending' })
   paymentStatus: 'pending' | 'paid_initial' | 'refunded' | 'paid_full';

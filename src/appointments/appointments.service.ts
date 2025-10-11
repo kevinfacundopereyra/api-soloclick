@@ -27,7 +27,7 @@ export class AppointmentService {
     return this.appointmentModel
       .find()
       .populate('professional', 'name specialty city') // ✅ Datos del profesional
-      .populate('services', 'name price duration')     // ✅ Datos de los servicios
+      .populate('services', 'name price duration') // ✅ Datos de los servicios
       .exec();
   }
 
@@ -127,27 +127,37 @@ export class AppointmentService {
       totalPrice: createAppointmentDto.totalPrice,
       totalDuration: createAppointmentDto.totalDuration,
       notes: createAppointmentDto.notes,
-      status: 'scheduled',
+      status: 'pending',
     });
 
     const saved = await appointment.save();
 
-    // Buscar emails para notificaciones
-    if (saved.user) {
-      const user = await this.userModel.findById(saved.user);
-      if (user?.email) {
-        await this.notificationsService.notifyUser(
-          user.email,
-          'Tu cita fue agendada correctamente.',
+    // ✅ AGREGAR - Enviar notificaciones mejoradas
+    try {
+      // Notificación al profesional (SIEMPRE se envía)
+      if (professional?.email) {
+        console.log('📧 Enviando notificación de nueva cita al profesional...');
+        const professionalMessage = `Nueva cita agendada para el ${createAppointmentDto.date} a las ${createAppointmentDto.time}. Cliente: ${saved.user ? 'Usuario registrado' : 'Cliente invitado'}`;
+        await this.notificationsService.notifyProfessional(
+          professional.email,
+          professionalMessage
         );
       }
-    }
 
-    if (professional?.email) {
-      await this.notificationsService.notifyProfessional(
-        professional.email,
-        'Tienes una nueva cita agendada.',
-      );
+      // Notificación al cliente registrado (solo si tiene user)
+      if (saved.user) {
+        const user = await this.userModel.findById(saved.user);
+        if (user?.email) {
+          console.log('📧 Enviando confirmación al cliente...');
+          await this.notificationsService.notifyUser(
+            user.email,
+            `Tu cita ha sido agendada para el ${createAppointmentDto.date} a las ${createAppointmentDto.time}. Status: Pendiente de confirmación.`
+          );
+        }
+      }
+    } catch (emailError) {
+      console.error('❌ Error enviando notificaciones:', emailError);
+      // No fallar la creación de cita por error de email
     }
 
     return saved;
@@ -167,5 +177,83 @@ export class AppointmentService {
       .populate('professional', 'name specialty city')
       .populate('services', 'name price duration')
       .exec();
+  }
+
+  async updateStatus(
+    appointmentId: string,
+    newStatus: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'scheduled',
+  ): Promise<{ success: boolean; appointment?: Appointment; message: string }> {
+    try {
+      const appointment = await this.appointmentModel.findById(appointmentId);
+
+      if (!appointment) {
+        return {
+          success: false,
+          message: 'Appointment not found',
+        };
+      }
+
+      // Actualizar el status
+      appointment.status = newStatus;
+      const updatedAppointment = await appointment.save();
+
+      // Buscar información del usuario y profesional para notificaciones
+      const professional = await this.professionalModel.findById(
+        updatedAppointment.professional,
+      );
+
+      // ✅ MEJORAR - Enviar notificaciones detalladas según el nuevo status
+      try {
+        if (updatedAppointment.user) {
+          const user = await this.userModel.findById(updatedAppointment.user);
+          
+          if (user?.email) {
+            let message = '';
+            const appointmentDate = new Date(updatedAppointment.date).toLocaleDateString();
+            const appointmentTime = updatedAppointment.time;
+            
+            switch (newStatus) {
+              case 'confirmed':
+                message = `¡Tu cita ha sido confirmada! 📅 Fecha: ${appointmentDate} a las ${appointmentTime}. Te esperamos en la fecha acordada.`;
+                console.log('📧 Enviando confirmación al cliente...');
+                break;
+              case 'cancelled':
+                message = `Tu cita del ${appointmentDate} a las ${appointmentTime} ha sido cancelada. Puedes reagendar cuando gustes.`;
+                console.log('📧 Enviando notificación de cancelación al cliente...');
+                break;
+              case 'completed':
+                message = `Tu cita del ${appointmentDate} ha sido completada. ¡Gracias por elegirnos! 🎉`;
+                console.log('📧 Enviando notificación de cita completada al cliente...');
+                break;
+              case 'scheduled':
+                message = `Tu cita ha sido reagendada para el ${appointmentDate} a las ${appointmentTime}.`;
+                console.log('📧 Enviando notificación de reagendamiento al cliente...');
+                break;
+            }
+            
+            if (message) {
+              await this.notificationsService.notifyUser(user.email, message);
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('❌ Error enviando notificación al cliente:', emailError);
+        // No fallar la actualización por error de email
+      }
+
+      return {
+        success: true,
+        appointment: updatedAppointment,
+        message: `Appointment status updated to ${newStatus}`,
+      };
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      return {
+        success: false,
+        message: 'Error updating appointment status',
+      };
+
+      
+    }
   }
 }
