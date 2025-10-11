@@ -1,50 +1,8 @@
-/* import { Controller, Post, Body, Get } from '@nestjs/common';
-import { AppointmentService } from './appointments.service';
-
-@Controller('appointments')
-export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentService) {}
-
-  @Get()
-  findAll() {
-    return this.appointmentsService.findAll();
-  }
-
-  @Post()
-  create(@Body() createAppointmentDto: any) {
-    return this.appointmentsService.create(createAppointmentDto);
-  }
-}
- */
-
-/* Segundo  guardado
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, Param, Patch, UseGuards, Request } from '@nestjs/common';
 import { AppointmentService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { Appointment } from './schemas/appointment.schema';
-
-@Controller('appointments')
-export class AppointmentsController {
-  constructor(private readonly appointmentService: AppointmentService) {}
-
-  @Get()
-  async findAll(): Promise<Appointment[]> {
-    return this.appointmentService.findAll();
-  }
-
-  @Post()
-  async create(
-    @Body() createAppointmentDto: CreateAppointmentDto,
-  ): Promise<Appointment> {
-    return this.appointmentService.create(createAppointmentDto);
-  }
-}
-
- */
-
-import { Controller, Post, Body, Get, Delete, Param } from '@nestjs/common';
-import { AppointmentService } from './appointments.service';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -54,8 +12,6 @@ export class AppointmentsController {
   findAll() {
     return this.appointmentService.findAll();
   }
-
-  // En appointments.controller.ts - en el método create:
 
   @Post()
   create(@Body() createAppointmentDto: CreateAppointmentDto) {
@@ -72,10 +28,12 @@ export class AppointmentsController {
     return this.appointmentService.findByClient(clientId);
   }
 
-/*   @Post()
-  create(@Body() createAppointmentDto: CreateAppointmentDto) {
-    return this.appointmentService.create(createAppointmentDto);
-  } */
+  @UseGuards(JwtAuthGuard)
+  @Get('professional') // GET /appointments/professional (usando JWT)
+  async getProfessionalAppointments(@Request() req: any) {
+    const professionalId = req.user.sub; // El ID viene del JWT como 'sub'
+    return this.appointmentService.findByProfessional(professionalId);
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
@@ -85,5 +43,13 @@ export class AppointmentsController {
   @Get('professional/:professionalId')
   findByProfessional(@Param('professionalId') professionalId: string) {
     return this.appointmentService.findByProfessional(professionalId);
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') appointmentId: string,
+    @Body() updateStatusDto: UpdateAppointmentStatusDto,
+  ) {
+    return this.appointmentService.updateStatus(appointmentId, updateStatusDto.status);
   }
 }
