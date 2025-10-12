@@ -37,7 +37,6 @@ export class CreateProfessionalDto {
   @IsNotEmpty()
   readonly specialty: string;
 
-  @IsOptional()
   @IsString()
   readonly userType?: string;
 
@@ -61,4 +60,12 @@ export class CreateProfessionalDto {
   @IsArray()
   @IsUrl({}, { each: true })
   readonly images?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  readonly appointmentDuration?: number;
+
+  @IsOptional()
+  @IsString()
+  readonly userType?: string;
 }
