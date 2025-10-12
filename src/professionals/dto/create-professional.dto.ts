@@ -7,32 +7,50 @@ import {
   Max,
   IsArray,
   IsUrl,
+  IsNotEmpty,
+  MinLength,
 } from 'class-validator';
 
 export class CreateProfessionalDto {
   @IsString()
+  @IsNotEmpty()
   readonly name: string;
 
   @IsEmail()
+  @IsNotEmpty()
   readonly email: string;
 
   @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  readonly password: string;
+
+  @IsString()
+  @IsNotEmpty()
   readonly phone: string;
 
   @IsString()
+  @IsNotEmpty()
   readonly city: string;
 
   @IsString()
+  @IsNotEmpty()
   readonly specialty: string;
 
   @IsString()
-  readonly password: string;
+  readonly userType?: string;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(5)
   readonly rating?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(15)
+  @Max(180)
+  readonly appointmentDuration?: number;
 
   @IsOptional()
   @IsString()

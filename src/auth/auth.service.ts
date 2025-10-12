@@ -5,12 +5,16 @@ import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly professionalsService: ProfessionalsService
+  ) {}
 
   async login(loginDto: any) {
+    // Primero buscar en usuarios (clientes)
     const user = await this.usersService.findByEmail(loginDto.email);
     if (user && user.password === loginDto.password) {
-      // Generar token JWT
+      // Generar token JWT para usuario
       const token = jwt.sign(
         {
           sub: user._id,
@@ -23,18 +27,11 @@ export class AuthService {
       );
       return { user, token };
     }
-    return { message: 'Credenciales inválidas' };
-  }
-}
 
-@Injectable()
-export class AuthProfessionalsService {
-  constructor(private readonly professionalsService: ProfessionalsService) {}
-
-  async loginprofecional(loginDto: any) {
-    const professional = await this.professionalsService.findById(loginDto.id);
+    // Si no se encuentra en usuarios, buscar en profesionales
+    const professional = await this.professionalsService.findByEmail(loginDto.email);
     if (professional && professional.password === loginDto.password) {
-      // Generar token JWT
+      // Generar token JWT para profesional
       const token = jwt.sign(
         {
           sub: professional._id,
@@ -45,8 +42,10 @@ export class AuthProfessionalsService {
         process.env.JWT_SECRET || 'default_secret',
         { expiresIn: '1d' },
       );
-      return { professional, token };
+      // Devolver como 'user' para mantener consistencia con el frontend
+      return { user: professional, token };
     }
+
     return { message: 'Credenciales inválidas' };
   }
 }
