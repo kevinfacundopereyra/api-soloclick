@@ -33,7 +33,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
-import { UsersController } from './users.controller';
 
 @Injectable()
 export class UsersService {
@@ -47,6 +46,11 @@ export class UsersService {
   }
 
   async create(createUserDto: any): Promise<User> {
+    // Asignar userType por defecto si no se proporciona
+    if (!createUserDto.userType) {
+      createUserDto.userType = 'cliente';
+    }
+
     const createdUser = new this.userModel(createUserDto);
     return createdUser.save();
   }

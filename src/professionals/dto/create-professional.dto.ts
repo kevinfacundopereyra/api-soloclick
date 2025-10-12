@@ -13,27 +13,27 @@ export class CreateProfessionalDto {
   @IsString()
   readonly name: string;
 
-  @IsOptional()
   @IsEmail()
-  readonly email?: string;
+  readonly email: string;
 
-  @IsOptional()
   @IsString()
-  readonly phone?: string;
+  readonly phone: string;
 
-  @IsOptional()
   @IsString()
-  readonly city?: string;
+  readonly city: string;
 
-  @IsOptional()
   @IsString()
-  readonly specialty?: string;
+  readonly specialty: string;
+
+  @IsString()
+  readonly password: string;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(5)
   readonly rating?: number;
+
   @IsOptional()
   @IsString()
   readonly description?: string;
@@ -42,4 +42,12 @@ export class CreateProfessionalDto {
   @IsArray()
   @IsUrl({}, { each: true })
   readonly images?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  readonly appointmentDuration?: number;
+
+  @IsOptional()
+  @IsString()
+  readonly userType?: string;
 }

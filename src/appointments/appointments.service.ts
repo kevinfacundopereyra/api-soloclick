@@ -65,7 +65,11 @@ export class AppointmentService {
  }
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment } from './schemas/appointment.schema';
@@ -90,56 +94,76 @@ export class AppointmentService {
     return this.appointmentModel.find().exec();
   }
 
-  async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
-    const professionals = await this.professionalModel.findById(createAppointmentDto.professional);
-    if (!professionals) {
-      throw new NotFoundException('Professional not found');
-    }
+  async create(
+    createAppointmentDto: CreateAppointmentDto,
+  ): Promise<Appointment> {
+    try {
+      // Verificar que el usuario existe
+      const user = await this.userModel.findById(createAppointmentDto.user);
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
 
-    // Calcular inicio y fin de la cita
-    const startDate = new Date(createAppointmentDto.date);
-    const endDate = new Date(startDate.getTime() + professionals.appointmentDuration * 60000);
+      // Verificar que el profesional existe
+      const professional = await this.professionalModel.findById(
+        createAppointmentDto.professional,
+      );
+      if (!professional) {
+        throw new NotFoundException('Profesional no encontrado');
+      }
 
-    // Verificar si hay superposición de citas
-    const overlapping = await this.appointmentModel.findOne({
-      professional: createAppointmentDto.professional,
-      $or: [
-        {
-          date: { $lt: endDate },
-          $expr: {
-            $gte: [
-              { $add: ['$date', professionals.appointmentDuration * 60000] },
-              startDate,
-            ],
-          },
+      // Calcular inicio y fin de la cita
+      const startDate = new Date(createAppointmentDto.date);
+      const endDate = new Date(
+        startDate.getTime() + professional.appointmentDuration * 60000,
+      );
+
+      // Verificar si hay superposición de citas (simplificado)
+      const overlapping = await this.appointmentModel.findOne({
+        professional: createAppointmentDto.professional,
+        date: {
+          $gte: startDate,
+          $lt: endDate,
         },
-      ],
-    });
+      });
 
-    if (overlapping) {
-      throw new ConflictException('El profesional ya tiene una cita en ese horario');
+      if (overlapping) {
+        throw new ConflictException(
+          'El profesional ya tiene una cita en ese horario',
+        );
+      }
+
+      const appointment = new this.appointmentModel({
+        ...createAppointmentDto,
+        duration: professional.appointmentDuration,
+      });
+
+      const saved = await appointment.save();
+
+      // Notificar por email (opcional, no crítico)
+      try {
+        if (user?.email) {
+          await this.notificationsService.notifyUser(
+            user.email,
+            'Tu cita fue agendada correctamente.',
+          );
+        }
+        if (professional?.email) {
+          await this.notificationsService.notifyProfessional(
+            professional.email,
+            'Tienes una nueva cita agendada.',
+          );
+        }
+      } catch (notificationError) {
+        console.warn('Error al enviar notificaciones:', notificationError);
+        // No lanzar error por problemas de notificación
+      }
+
+      return saved;
+    } catch (error) {
+      console.error('Error en create appointment:', error);
+      throw error;
     }
-
-    const appointment = new this.appointmentModel({
-      ...createAppointmentDto,
-      duration: professionals.appointmentDuration,
-    });
-
-    const saved = await appointment.save();
-
-    // Buscar emails
-    const user = await this.userModel.findById(saved.user);
-    const professional = await this.professionalModel.findById(saved.professional);
-
-    // Notificar por email
-    if (user?.email) {
-      await this.notificationsService.notifyUser(user.email, 'Tu cita fue agendada correctamente.');
-    }
-    if (professional?.email) {
-      await this.notificationsService.notifyProfessional(professional.email, 'Tienes una nueva cita agendada.');
-    }
-
-    return saved;
   }
 
   async remove(id: string): Promise<Appointment> {

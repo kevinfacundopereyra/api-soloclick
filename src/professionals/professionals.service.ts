@@ -51,12 +51,33 @@ export class ProfessionalsService {
     return professional;
   }
 
-  async create(createProfessionalDto: CreateProfessionalDto): Promise<Professional> {
-    const professional = new this.professionalModel(createProfessionalDto);
-    return professional.save();
+  async create(
+    createProfessionalDto: CreateProfessionalDto,
+  ): Promise<Professional> {
+    try {
+      // Crear un objeto con los valores por defecto
+      const professionalData = {
+        ...createProfessionalDto,
+        userType: createProfessionalDto.userType || 'profesional',
+        appointmentDuration: createProfessionalDto.appointmentDuration || 60, // 60 minutos por defecto
+      };
+
+      const professional = new this.professionalModel(professionalData);
+      return professional.save();
+    } catch (error) {
+      console.error('Error en create professional:', error);
+      throw error;
+    }
   }
 
-  async update(id: string, updateProfessionalDto: CreateProfessionalDto): Promise<Professional> {
+  async findByEmail(email: string): Promise<Professional | null> {
+    return this.professionalModel.findOne({ email }).exec();
+  }
+
+  async update(
+    id: string,
+    updateProfessionalDto: CreateProfessionalDto,
+  ): Promise<Professional> {
     const updated = await this.professionalModel.findByIdAndUpdate(
       id,
       updateProfessionalDto,

@@ -17,7 +17,6 @@ export class AppointmentsController {
 }
  */
 
-
 /* Segundo  guardado
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AppointmentService } from './appointments.service';
@@ -57,8 +56,43 @@ export class AppointmentsController {
   }
 
   @Post()
-  create(@Body() createAppointmentDto: CreateAppointmentDto) {
-    return this.appointmentService.create(createAppointmentDto);
+  async create(@Body() createAppointmentDto: CreateAppointmentDto) {
+    try {
+      // Validar que todos los campos requeridos estén presentes
+      const requiredFields = ['user', 'professional', 'date'];
+      const missingFields = requiredFields.filter(
+        (field) => !createAppointmentDto[field],
+      );
+
+      if (missingFields.length > 0) {
+        return {
+          success: false,
+          message: `Faltan campos requeridos: ${missingFields.join(', ')}`,
+        };
+      }
+
+      const appointment =
+        await this.appointmentService.create(createAppointmentDto);
+
+      return {
+        success: true,
+        message: 'Reserva creada exitosamente',
+        appointment: {
+          id: appointment._id,
+          user: appointment.user,
+          professional: appointment.professional,
+          date: appointment.date,
+          duration: appointment.duration,
+          paymentStatus: appointment.paymentStatus,
+        },
+      };
+    } catch (error) {
+      console.error('Error al crear reserva:', error);
+      return {
+        success: false,
+        message: error.message || 'Error interno del servidor',
+      };
+    }
   }
 
   @Delete(':id')
