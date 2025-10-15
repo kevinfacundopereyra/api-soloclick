@@ -48,6 +48,13 @@ export class Professional extends Document {
   @Prop({ required: true })
   specialty: string;
 
+  @Prop({ 
+    required: true, 
+    enum: ['local', 'home'],
+    default: 'local'
+  })
+  modality: 'local' | 'home';
+
   @Prop({ default: 'professional' })
   userType: string;
 
