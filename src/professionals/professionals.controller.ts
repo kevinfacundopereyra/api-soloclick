@@ -49,14 +49,27 @@ export class ProfessionalsController {
     return this.professionalsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.professionalsService.findById(id);
-  }
-
   @Get('by-specialty/:specialty')
   findBySpecialty(@Param('specialty') specialty: string) {
     return this.professionalsService.findBySpecialty(specialty);
+  }
+
+  @Get('by-modality/:modality')
+  findByModality(@Param('modality') modality: 'local' | 'home') {
+    return this.professionalsService.findByModality(modality);
+  }
+
+  @Get('filter/:specialty/:modality')
+  findBySpecialtyAndModality(
+    @Param('specialty') specialty: string,
+    @Param('modality') modality: 'local' | 'home'
+  ) {
+    return this.professionalsService.findBySpecialtyAndModality(specialty, modality);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.professionalsService.findById(id);
   }
 
   @Post()

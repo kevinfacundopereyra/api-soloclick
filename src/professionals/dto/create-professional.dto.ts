@@ -9,6 +9,7 @@ import {
   IsUrl,
   IsNotEmpty,
   MinLength,
+  IsEnum,
 } from 'class-validator';
 
 export class CreateProfessionalDto {
@@ -36,6 +37,10 @@ export class CreateProfessionalDto {
   @IsString()
   @IsNotEmpty()
   readonly specialty: string;
+
+  @IsEnum(['local', 'home'])
+  @IsNotEmpty()
+  readonly modality: 'local' | 'home';
 
   @IsOptional()
   @IsString()
