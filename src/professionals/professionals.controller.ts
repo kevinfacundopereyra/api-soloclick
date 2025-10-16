@@ -1,23 +1,3 @@
-/* import { Controller, Post, Body, Get } from '@nestjs/common';
-import { ProfessionalsService } from './professionals.service';
-import { CreateProfessionalDto } from './dto/create-professional.dto';
-
-@Controller('professionals')
-export class ProfessionalsController {
-  constructor(private readonly professionalsService: ProfessionalsService) {}
-
-  @Get()
-  findAll() {
-    return this.professionalsService.findAll();
-  }
-
-  @Post()
-  create(@Body() createProfessionalDto: CreateProfessionalDto) {
-    return this.professionalsService.create(createProfessionalDto);
-  }
-}
- */
-
 import {
   Controller,
   Post,
@@ -49,14 +29,27 @@ export class ProfessionalsController {
     return this.professionalsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.professionalsService.findById(id);
-  }
-
   @Get('by-specialty/:specialty')
   findBySpecialty(@Param('specialty') specialty: string) {
     return this.professionalsService.findBySpecialty(specialty);
+  }
+
+  @Get('by-modality/:modality')
+  findByModality(@Param('modality') modality: 'local' | 'home') {
+    return this.professionalsService.findByModality(modality);
+  }
+
+  @Get('filter/:specialty/:modality')
+  findBySpecialtyAndModality(
+    @Param('specialty') specialty: string,
+    @Param('modality') modality: 'local' | 'home'
+  ) {
+    return this.professionalsService.findBySpecialtyAndModality(specialty, modality);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.professionalsService.findById(id);
   }
 
   @Post()

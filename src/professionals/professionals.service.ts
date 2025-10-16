@@ -75,6 +75,24 @@ export class ProfessionalsService {
     return professionals;
   }
 
+  // 15/10 Filtrar profesionales por modalidad (local/home)
+  async findByModality(modality: 'local' | 'home'): Promise<Professional[]> {
+    const professionals = await this.professionalModel.find({ modality });
+    if (!professionals || professionals.length === 0) {
+      throw new NotFoundException('No professionals found for the given modality');
+    }
+    return professionals;
+  }
+
+  // 15/10 Filtrar profesionales por especialidad y modalidad
+  async findBySpecialtyAndModality(specialty: string, modality: 'local' | 'home'): Promise<Professional[]> {
+    const professionals = await this.professionalModel.find({ specialty, modality });
+    if (!professionals || professionals.length === 0) {
+      throw new NotFoundException('No professionals found for the given specialty and modality');
+    }
+    return professionals;
+  }
+
   async create(
     createProfessionalDto: CreateProfessionalDto,
   ): Promise<{ professional: Professional; token: string }> {
