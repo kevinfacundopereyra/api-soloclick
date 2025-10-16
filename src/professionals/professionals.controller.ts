@@ -86,9 +86,8 @@ export class ProfessionalsController {
         };
       }
 
-      const professional = await this.professionalsService.create(
-        createProfessionalDto,
-      );
+      const result = await this.professionalsService.create(createProfessionalDto);
+      const professional = result.professional; // Extraer el professional del resultado
 
       return {
         success: true,

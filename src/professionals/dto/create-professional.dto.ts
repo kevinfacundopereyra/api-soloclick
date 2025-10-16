@@ -39,8 +39,8 @@ export class CreateProfessionalDto {
   readonly specialty: string;
 
   @IsEnum(['local', 'home'])
-  @IsNotEmpty()
-  readonly modality: 'local' | 'home';
+  @IsOptional()
+  readonly modality?: 'local' | 'home';
 
   @IsOptional()
   @IsString()
@@ -66,12 +66,4 @@ export class CreateProfessionalDto {
   @IsArray()
   @IsUrl({}, { each: true })
   readonly images?: string[];
-
-  @IsOptional()
-  @IsNumber()
-  readonly appointmentDuration?: number;
-
-  @IsOptional()
-  @IsString()
-  readonly userType?: string;
 }
