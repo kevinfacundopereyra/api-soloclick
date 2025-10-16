@@ -93,7 +93,7 @@ export class ProfessionalsController {
         };
       }
 
-      const professional = await this.professionalsService.create(
+      const result = await this.professionalsService.create(
         createProfessionalDto,
       );
 
@@ -101,14 +101,15 @@ export class ProfessionalsController {
         success: true,
         message: 'Profesional registrado exitosamente',
         professional: {
-          id: professional._id,
-          name: professional.name,
-          email: professional.email,
-          phone: professional.phone,
-          city: professional.city,
-          specialty: professional.specialty,
-          userType: professional.userType,
+          id: result.professional._id,
+          name: result.professional.name,
+          email: result.professional.email,
+          phone: result.professional.phone,
+          city: result.professional.city,
+          specialty: result.professional.specialty,
+          userType: result.professional.userType,
         },
+        token: result.token,
       };
     } catch (error) {
       console.error('Error al crear profesional:', error);
