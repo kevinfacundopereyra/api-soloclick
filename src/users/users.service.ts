@@ -34,6 +34,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class UsersService {
@@ -50,7 +51,7 @@ export class UsersService {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<{ user: User; token: string }> {
     try {
       // Verificar si el email ya existe
       const existingUser = await this.findByEmail(createUserDto.email);
@@ -65,7 +66,21 @@ export class UsersService {
       };
 
       const createdUser = new this.userModel(userData);
-      return await createdUser.save();
+      const savedUser = await createdUser.save();
+
+      // Generar token JWT después del registro exitoso
+      const token = jwt.sign(
+        {
+          sub: savedUser._id,
+          name: savedUser.name,
+          userType: savedUser.userType,
+          email: savedUser.email,
+        },
+        process.env.JWT_SECRET || 'default_secret',
+        { expiresIn: '1d' },
+      );
+
+      return { user: savedUser, token };
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
