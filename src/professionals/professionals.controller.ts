@@ -42,9 +42,12 @@ export class ProfessionalsController {
   @Get('filter/:specialty/:modality')
   findBySpecialtyAndModality(
     @Param('specialty') specialty: string,
-    @Param('modality') modality: 'local' | 'home'
+    @Param('modality') modality: 'local' | 'home',
   ) {
-    return this.professionalsService.findBySpecialtyAndModality(specialty, modality);
+    return this.professionalsService.findBySpecialtyAndModality(
+      specialty,
+      modality,
+    );
   }
 
   @Get(':id')
@@ -89,6 +92,7 @@ export class ProfessionalsController {
       const result = await this.professionalsService.create(
         createProfessionalDto,
       );
+      const professional = result.professional; // Extraer el professional del resultado
 
       return {
         success: true,
