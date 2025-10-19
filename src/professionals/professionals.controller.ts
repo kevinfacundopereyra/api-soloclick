@@ -42,9 +42,12 @@ export class ProfessionalsController {
   @Get('filter/:specialty/:modality')
   findBySpecialtyAndModality(
     @Param('specialty') specialty: string,
-    @Param('modality') modality: 'local' | 'home'
+    @Param('modality') modality: 'local' | 'home',
   ) {
-    return this.professionalsService.findBySpecialtyAndModality(specialty, modality);
+    return this.professionalsService.findBySpecialtyAndModality(
+      specialty,
+      modality,
+    );
   }
 
   @Get(':id')
@@ -63,6 +66,7 @@ export class ProfessionalsController {
         'phone',
         'city',
         'specialty',
+        'locations',
       ];
       const missingFields = requiredFields.filter(
         (field) => !createProfessionalDto[field],
@@ -86,21 +90,25 @@ export class ProfessionalsController {
         };
       }
 
-      const result = await this.professionalsService.create(createProfessionalDto);
+      const result = await this.professionalsService.create(
+        createProfessionalDto,
+      );
       const professional = result.professional; // Extraer el professional del resultado
 
       return {
         success: true,
         message: 'Profesional registrado exitosamente',
         professional: {
-          id: professional._id,
-          name: professional.name,
-          email: professional.email,
-          phone: professional.phone,
-          city: professional.city,
-          specialty: professional.specialty,
-          userType: professional.userType,
+          id: result.professional._id,
+          name: result.professional.name,
+          email: result.professional.email,
+          phone: result.professional.phone,
+          city: result.professional.city,
+          specialty: result.professional.specialty,
+          userType: result.professional.userType,
+          locations: result.professional.locations,
         },
+        token: result.token,
       };
     } catch (error) {
       console.error('Error al crear profesional:', error);
