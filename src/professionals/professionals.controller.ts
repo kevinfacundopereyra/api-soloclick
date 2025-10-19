@@ -66,6 +66,7 @@ export class ProfessionalsController {
         'phone',
         'city',
         'specialty',
+        'locations',
       ];
       const missingFields = requiredFields.filter(
         (field) => !createProfessionalDto[field],
@@ -105,6 +106,7 @@ export class ProfessionalsController {
           city: result.professional.city,
           specialty: result.professional.specialty,
           userType: result.professional.userType,
+          locations: result.professional.locations,
         },
         token: result.token,
       };
