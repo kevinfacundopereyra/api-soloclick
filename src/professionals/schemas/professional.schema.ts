@@ -28,6 +28,24 @@ export const ProfessionalSchema = SchemaFactory.createForClass(Professional);
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+// El sub-esquema de Location sigue igual
+@Schema({ _id: false })
+export class Location {
+  @Prop({ type: String, trim: true })
+  address: string;
+
+  // Añadimos un nombre opcional para la sucursal (ej: "Sucursal Centro")
+  @Prop({ type: String, trim: true })
+  branchName?: string;
+
+  @Prop({ type: Number, required: true })
+  latitude: number;
+
+  @Prop({ type: Number, required: true })
+  longitude: number;
+}
+export const LocationSchema = SchemaFactory.createForClass(Location);
+
 @Schema({ timestamps: true })
 export class Professional extends Document {
   @Prop({ required: true })
@@ -48,10 +66,10 @@ export class Professional extends Document {
   @Prop({ required: true })
   specialty: string;
 
-  @Prop({ 
-    required: true, 
+  @Prop({
+    required: true,
     enum: ['local', 'home'],
-    default: 'local'
+    default: 'local',
   })
   modality: 'local' | 'home';
 
@@ -76,7 +94,7 @@ export class Professional extends Document {
       thursday: { open: String, close: String },
       friday: { open: String, close: String },
       saturday: { open: String, close: String },
-      sunday: { open: String, close: String }
+      sunday: { open: String, close: String },
     },
     default: {
       monday: { open: '09:00', close: '18:00' },
@@ -85,8 +103,8 @@ export class Professional extends Document {
       thursday: { open: '09:00', close: '18:00' },
       friday: { open: '09:00', close: '18:00' },
       saturday: { open: '10:00', close: '15:00' },
-      sunday: { open: '', close: '' }
-    }
+      sunday: { open: '', close: '' },
+    },
   })
   workingHours: {
     monday: { open: string; close: string };
@@ -116,10 +134,10 @@ export class Professional extends Document {
         thursday: { open: String, close: String },
         friday: { open: String, close: String },
         saturday: { open: String, close: String },
-        sunday: { open: String, close: String }
+        sunday: { open: String, close: String },
       },
       images: [String],
-      isProfileComplete: { type: Boolean, default: false }
+      isProfileComplete: { type: Boolean, default: false },
     },
     default: {
       isProfileComplete: false,
@@ -130,9 +148,9 @@ export class Professional extends Document {
         thursday: { open: '09:00', close: '18:00' },
         friday: { open: '09:00', close: '18:00' },
         saturday: { open: '10:00', close: '15:00' },
-        sunday: { open: '', close: '' }
-      }
-    }
+        sunday: { open: '', close: '' },
+      },
+    },
   })
   profile: {
     description?: string;
@@ -144,6 +162,10 @@ export class Professional extends Document {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  // MODIFICACIÓN PRINCIPAL: Ahora es un array de Locations
+  @Prop({ type: [LocationSchema] }) // Se usa el schema de Location dentro de un array
+  locations: Location[];
 }
 
 export const ProfessionalSchema = SchemaFactory.createForClass(Professional);

@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsDateString, IsMongoId } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  IsMongoId,
+} from 'class-validator';
 
 export class CreatePaymentDto {
   @IsString()

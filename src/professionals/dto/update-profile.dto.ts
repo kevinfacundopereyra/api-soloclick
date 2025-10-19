@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsObject, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsObject,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { LocationDto } from './create-professional.dto'; // Reutilizamos el DTO de ubicación
+import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -25,4 +33,10 @@ export class UpdateProfileDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @IsOptional() // 👈 ¡Esta es la clave! Hace que el campo no sea obligatorio.
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LocationDto)
+  locations?: LocationDto[]; // El '?' también indica que es opcional en TypeScript.
 }

@@ -1,16 +1,38 @@
+import { Type } from 'class-transformer';
+/* import { ValidateNested } from 'class-validator'; */
+
 import {
   IsString,
   IsEmail,
   IsOptional,
   IsNumber,
+  IsObject,
   Min,
   Max,
   IsArray,
   IsUrl,
   IsNotEmpty,
   MinLength,
+  ValidateNested,
   IsEnum,
 } from 'class-validator';
+
+export class LocationDto {
+  @IsString()
+  address: string;
+
+  @IsString()
+  @IsOptional()
+  branchName?: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  latitude: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  longitude: number;
+}
 
 export class CreateProfessionalDto {
   @IsString()
@@ -66,4 +88,10 @@ export class CreateProfessionalDto {
   @IsArray()
   @IsUrl({}, { each: true })
   readonly images?: string[];
+
+  // AÑADE ESTA PROPIEDAD
+  @IsArray()
+  @ValidateNested({ each: true }) // Valida cada objeto dentro del array
+  @Type(() => LocationDto)
+  locations: LocationDto[];
 }
