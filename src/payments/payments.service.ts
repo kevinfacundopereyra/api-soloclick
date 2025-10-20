@@ -1,26 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment } from '../appointments/schemas/appointment.schema';
 import { Payment, PaymentDocument } from './schemas/payment.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import axios from 'axios';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
-
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || '',
-});
-
-// configurar axios para llamadas internas a la API (si realmente necesitas llamar a /services desde aquí)
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
-const api = axios.create({ baseURL: API_BASE_URL });
-
-// helper para normalizar _id -> id (igual que en servicesService)
-const normalizeService = (service: any) => ({
-  ...service,
-  id: service._id || service.id,
-  _id: service._id || service.id,
-});
+import { MercadoPagoService } from '../mercado-pago/mercado-pago.service';
 
 @Injectable()
 export class PaymentsService {
@@ -29,51 +17,64 @@ export class PaymentsService {
     private readonly appointmentModel: Model<Appointment>,
     @InjectModel(Payment.name)
     private readonly paymentModel: Model<PaymentDocument>,
+    private readonly mercadoPagoService: MercadoPagoService,
   ) {}
 
   // Nuevo método para crear un pago y preferencia en Mercado Pago
   async createPayment(createPaymentDto: CreatePaymentDto): Promise<any> {
-    const { serviceName, amount } = createPaymentDto;
+    // El DTO puede no tener 'title', así que lo manejamos como opcional.
+    const { amount, appointmentId } = createPaymentDto;
 
-    // Opcional: Validar datos, buscar cita, etc.
+    if (!amount || !appointmentId) {
+      throw new BadRequestException(
+        'Los campos "amount" y "appointmentId" son requeridos.',
+      );
+    }
 
-    const preference = new Preference(client);
+    // 1. Buscar la cita en la base de datos usando el ID proporcionado.
+    const appointment = await this.appointmentModel.findById(appointmentId);
+
+    if (!appointment) {
+      throw new NotFoundException(
+        `No se encontró la cita con el ID: ${appointmentId}`,
+      );
+    }
+
+    // 2. Construir el título a partir de los servicios de la cita encontrada.
+    const paymentTitle =
+      appointment.services && appointment.services.length > 0
+        ? appointment.services.join(', ')
+        : `Pago de Cita`;
 
     try {
-      const data = await preference.create({
-        body: {
-          items: [
-            {
-              id: new Date().getTime().toString(),
-              title: serviceName || 'Servicio',
-              quantity: 1,
-              unit_price: amount,
-            },
-          ],
-          payer: {
-            email: '',
-          },
-        },
+      const preference = await this.mercadoPagoService.createPreference({
+        id: appointmentId, // Pasamos el ID de la cita como ID del item
+        title: paymentTitle,
+        price: Number(appointment.totalPrice), // Usar el precio de la cita para mayor seguridad
+        quantity: 1,
       });
 
       // Opcional: Guardar el pago en la base de datos
-      // const newPayment = new this.paymentModel({
-      //   ...createPaymentDto,
-      //   paymentId: data.id,
-      //   paymentUrl: data.init_point,
-      //   status: 'pending',
-      //   createdAt: new Date(),
-      // });
-      // await newPayment.save();
+      const newPayment = new this.paymentModel({
+        ...createPaymentDto,
+        paymentId: preference.preferenceId,
+        paymentUrl: preference.initPoint,
+        status: 'pending',
+        createdAt: new Date(),
+      });
+      await newPayment.save();
 
       return {
-        preference_id: data.id,
-        preference_url: data.init_point,
+        preference_id: preference.preferenceId,
+        preference_url: preference.initPoint,
         status: 'pending',
       };
     } catch (error) {
       console.error('❌ Error creando preferencia Mercado Pago:', error);
-      throw new NotFoundException('No se pudo crear la preferencia de pago');
+      // Re-lanzar un error de NestJS para que el controlador lo maneje adecuadamente
+      throw new NotFoundException(
+        'No se pudo crear la preferencia de pago con Mercado Pago.',
+      );
     }
   }
 
@@ -209,91 +210,46 @@ export class PaymentsService {
   // Método principal para obtener pagos y estadísticas del profesional autenticado
   async getMyPayments(professionalId: string) {
     try {
-      console.log('🔍 SERVICE - Buscando pagos...');
-      console.log('🔍 SERVICE - professionalId recibido:', professionalId);
-      console.log('🔍 SERVICE - Tipo:', typeof professionalId);
+      if (!Types.ObjectId.isValid(professionalId)) {
+        throw new BadRequestException('El ID del profesional no es válido.');
+      }
 
-      // ✅ PROBAR múltiples formas de buscar
+      const professionalObjectId = new Types.ObjectId(professionalId);
 
-      // Método 1: String directo
-      const payments1 = await this.paymentModel.find({
-        professionalId: professionalId,
+      const allPayments = await this.paymentModel.find({
+        professionalId: professionalObjectId,
       });
-      console.log('🔍 SERVICE - Método 1 (string):', payments1.length);
 
-      // Método 2: Con ObjectId
-      let payments2 = [];
-      try {
-        const { Types } = require('mongoose');
-        payments2 = await this.paymentModel.find({
-          professionalId: new Types.ObjectId(professionalId),
-        });
-        console.log('🔍 SERVICE - Método 2 (ObjectId):', payments2.length);
-      } catch (e) {
-        console.log('🔍 SERVICE - Método 2 falló (no es ObjectId válido)');
-      }
-
-      // Método 3: Comparación flexible
-      const payments3 = await this.paymentModel.find({
-        $or: [
-          { professionalId: professionalId },
-          { professionalId: { $eq: professionalId } },
-        ],
-      });
-      console.log('🔍 SERVICE - Método 3 ($or):', payments3.length);
-
-      // Usar el que tenga resultados
-      let finalPayments = payments1;
-      if (payments1.length === 0 && payments2.length > 0) {
-        finalPayments = payments2;
-        console.log('🔍 SERVICE - Usando método 2 (ObjectId)');
-      } else if (payments1.length === 0 && payments3.length > 0) {
-        finalPayments = payments3;
-        console.log('🔍 SERVICE - Usando método 3 ($or)');
-      } else {
-        console.log('🔍 SERVICE - Usando método 1 (string)');
-      }
-
-      console.log(
-        '🔍 SERVICE - Pagos encontrados FINAL:',
-        finalPayments.length,
-      );
-
-      if (finalPayments.length > 0) {
-        console.log('🔍 SERVICE - Primer pago encontrado:', {
-          _id: finalPayments[0]._id,
-          professionalId: finalPayments[0].professionalId,
-          clientName: finalPayments[0].clientName,
-          amount: finalPayments[0].amount,
-        });
-      }
+      console.log('🔍 SERVICE - Pagos encontrados:', allPayments.length);
 
       // Calcular stats
-      const completedPayments = finalPayments.filter(
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0));
+      const weekStart = new Date(
+        now.setDate(now.getDate() - now.getDay()),
+      ).setHours(0, 0, 0, 0);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const completedPayments = allPayments.filter(
         (p) => p.status === 'completed',
       );
-      const pendingPayments = finalPayments.filter(
-        (p) => p.status === 'pending',
-      );
+      const pendingPayments = allPayments.filter((p) => p.status === 'pending');
 
       const stats = {
         totalIncome: completedPayments.reduce(
           (sum, p) => sum + (p.netAmount || 0),
           0,
         ),
-        thisMonth: completedPayments.reduce(
-          (sum, p) => sum + (p.netAmount || 0),
-          0,
-        ),
-        thisWeek: completedPayments.reduce(
-          (sum, p) => sum + (p.netAmount || 0),
-          0,
-        ),
-        today: completedPayments.reduce(
-          (sum, p) => sum + (p.netAmount || 0),
-          0,
-        ),
-        totalCommissions: finalPayments.reduce(
+        thisMonth: completedPayments
+          .filter((p) => p.paymentDate >= monthStart)
+          .reduce((sum, p) => sum + (p.netAmount || 0), 0),
+        thisWeek: completedPayments
+          .filter((p) => p.paymentDate >= new Date(weekStart))
+          .reduce((sum, p) => sum + (p.netAmount || 0), 0),
+        today: completedPayments
+          .filter((p) => p.paymentDate >= todayStart)
+          .reduce((sum, p) => sum + (p.netAmount || 0), 0),
+        totalCommissions: allPayments.reduce(
           (sum, p) => sum + (p.commission || 0),
           0,
         ),
@@ -310,31 +266,14 @@ export class PaymentsService {
 
       return {
         success: true,
-        payments: finalPayments,
+        payments: allPayments,
         stats,
       };
     } catch (error) {
       console.error('❌ SERVICE Error:', error);
-      return {
-        success: false,
-        payments: [],
-        stats: {},
-      };
-    }
-  }
-
-  async updateService(serviceId: string, serviceData: any) {
-    try {
-      const response = await api.put(`/services/${serviceId}`, serviceData);
-      console.log('🔍 Respuesta updateService:', response.data);
-
-      return {
-        success: true,
-        service: normalizeService(response.data),
-        message: 'Servicio actualizado exitosamente',
-      };
-    } catch (error: any) {
-      console.error('❌ Error en updateService:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw error;
     }
   }

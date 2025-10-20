@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsDateString,
   IsMongoId,
+  IsArray,
 } from 'class-validator';
 
 export class CreatePaymentDto {
@@ -24,6 +25,11 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsString()
   serviceName?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  // Cambiamos de serviceName a services para que coincida con el payload
+  services?: string[];
 
   @IsNumber()
   amount: number;

@@ -20,24 +20,27 @@ export class MercadoPagoService {
   }
 
   async createPreference(item: {
+    id: string;
     title: string;
     price: number;
     quantity?: number;
+    external_reference?: string;
   }) {
     const preference = new Preference(this.client);
-    const { title, price, quantity = 1 } = item;
+    const { id, title, price: amount, quantity = 1, external_reference } = item;
 
     try {
       const result = await preference.create({
         body: {
           items: [
             {
-              id: '', // opcional
+              id: id, // Usamos el ID de la cita que recibimos
               title,
               quantity,
-              unit_price: price,
+              unit_price: amount,
             },
           ],
+          external_reference: external_reference, // Referencia a nuestra cita
         },
       });
 
