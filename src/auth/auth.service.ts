@@ -25,7 +25,7 @@ export class AuthService {
         process.env.JWT_SECRET || 'default_secret',
         { expiresIn: '1d' },
       );
-      return { user, token };
+      return { success: true, user, token };
     }
 
     // Si no se encuentra en usuarios, buscar en profesionales
@@ -43,9 +43,9 @@ export class AuthService {
         { expiresIn: '1d' },
       );
       // Devolver como 'user' para mantener consistencia con el frontend
-      return { user: professional, token };
+      return { success: true, user: professional, token };
     }
 
-    return { message: 'Credenciales inválidas' };
+    return { success: false, message: 'Credenciales inválidas' };
   }
 }
