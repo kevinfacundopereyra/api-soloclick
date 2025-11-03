@@ -216,19 +216,31 @@ export class PaymentsService {
 
       const professionalObjectId = new Types.ObjectId(professionalId);
 
-      const allPayments = await this.paymentModel.find({
-        professionalId: professionalObjectId,
-      });
+      // 🚨 CORRECCIÓN CLAVE: Usamos .populate() para traer los datos del cliente.
+      const allPayments = await this.paymentModel
+        .find({
+          professionalId: professionalObjectId,
+        })
+        // Asumimos que 'clientId' es la referencia al modelo 'User'
+        // y queremos traer el campo 'name'.
+        .populate('clientId', 'name email')
+        .exec(); // Usar .exec() para asegurar que la promesa se ejecute
 
       console.log('🔍 SERVICE - Pagos encontrados:', allPayments.length);
 
-      // Calcular stats
+      // Calcular stats (Tu lógica de cálculo se mantiene)
+      // ... (El cálculo de fechas y las variables now, todayStart, etc.) ...
       const now = new Date();
       const todayStart = new Date(now.setHours(0, 0, 0, 0));
+      // Nota: Al usar now.setHours(0,0,0,0) se modifica 'now'. Se recomienda clonar la fecha antes de usar setDate.
       const weekStart = new Date(
-        now.setDate(now.getDate() - now.getDay()),
+        new Date(now).setDate(now.getDate() - now.getDay()),
       ).setHours(0, 0, 0, 0);
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStart = new Date(
+        new Date(now).getFullYear(),
+        now.getMonth(),
+        1,
+      );
 
       const completedPayments = allPayments.filter(
         (p) => p.status === 'completed',
