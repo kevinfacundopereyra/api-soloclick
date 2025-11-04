@@ -1,14 +1,23 @@
+// api-soloclick/src/payments/payments.service.ts
+
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject, // 👈 AÑADIDO
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment } from '../appointments/schemas/appointment.schema';
 import { Payment, PaymentDocument } from './schemas/payment.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { MercadoPagoService } from '../mercado-pago/mercado-pago.service';
+
+// ❌ ELIMINADO: Ya no importamos el servicio local de Mercado Pago
+// import { MercadoPagoService } from '../mercado-pago/mercado-pago.service';
+
+// 📦 AÑADIDO: Importamos las herramientas para llamar al microservicio
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PaymentsService {
@@ -17,12 +26,14 @@ export class PaymentsService {
     private readonly appointmentModel: Model<Appointment>,
     @InjectModel(Payment.name)
     private readonly paymentModel: Model<PaymentDocument>,
-    private readonly mercadoPagoService: MercadoPagoService,
+
+    // 📡 CAMBIADO: Inyectamos el "cliente" del microservicio
+    // en lugar del servicio local.
+    @Inject('PAGOS_SERVICE') private clientPagos: ClientProxy,
   ) {}
 
   // Nuevo método para crear un pago y preferencia en Mercado Pago
   async createPayment(createPaymentDto: CreatePaymentDto): Promise<any> {
-    // El DTO puede no tener 'title', así que lo manejamos como opcional.
     const { amount, appointmentId } = createPaymentDto;
 
     if (!amount || !appointmentId) {
@@ -31,7 +42,6 @@ export class PaymentsService {
       );
     }
 
-    // 1. Buscar la cita en la base de datos usando el ID proporcionado.
     const appointment = await this.appointmentModel.findById(appointmentId);
 
     if (!appointment) {
@@ -40,25 +50,35 @@ export class PaymentsService {
       );
     }
 
-    // 2. Construir el título a partir de los servicios de la cita encontrada.
     const paymentTitle =
       appointment.services && appointment.services.length > 0
         ? appointment.services.join(', ')
         : `Pago de Cita`;
 
     try {
-      const preference = await this.mercadoPagoService.createPreference({
-        id: appointmentId, // Pasamos el ID de la cita como ID del item
-        title: paymentTitle,
-        price: Number(appointment.totalPrice), // Usar el precio de la cita para mayor seguridad
-        quantity: 1,
-      });
+      // 🚚 ESTE ES EL GRAN CAMBIO
+      // Ya no llamamos a 'this.mercadoPagoService.createPreference'
 
+      // 1. Preparamos los datos para enviar al microservicio
+      const preferenceData = {
+        id: appointmentId,
+        title: paymentTitle,
+        price: Number(appointment.totalPrice),
+        quantity: 1,
+      };
+
+      // 2. Enviamos el mensaje 'crear_preferencia_mp' al microservicio
+      //    y esperamos la respuesta.
+      const preference = await firstValueFrom(
+        this.clientPagos.send('crear_preferencia_mp', preferenceData),
+      );
+
+      // 3. El resto del código sigue igual...
       // Opcional: Guardar el pago en la base de datos
       const newPayment = new this.paymentModel({
         ...createPaymentDto,
-        paymentId: preference.preferenceId,
-        paymentUrl: preference.initPoint,
+        paymentId: preference.preferenceId, // Usamos la respuesta del microservicio
+        paymentUrl: preference.initPoint, // Usamos la respuesta del microservicio
         status: 'pending',
         createdAt: new Date(),
       });
@@ -70,13 +90,17 @@ export class PaymentsService {
         status: 'pending',
       };
     } catch (error) {
-      console.error('❌ Error creando preferencia Mercado Pago:', error);
-      // Re-lanzar un error de NestJS para que el controlador lo maneje adecuadamente
+      console.error('❌ Error al contactar microservicio de pagos:', error);
       throw new NotFoundException(
-        'No se pudo crear la preferencia de pago con Mercado Pago.',
+        'No se pudo crear la preferencia de pago (microservicio).',
       );
     }
   }
+
+  // ===================================================================
+  // TODOS LOS MÉTODOS DE AQUÍ PARA ABAJO NO SE TOCAN
+  // Siguen funcionando igual porque solo leen tu base de datos local.
+  // ===================================================================
 
   async refundPayment(paymentId: string) {
     // Simulación de reembolso
@@ -103,7 +127,6 @@ export class PaymentsService {
     };
   }
 
-  // Método para obtener todos los pagos (para debugging)
   async getAllPayments(): Promise<Payment[]> {
     try {
       const payments = await this.paymentModel.find({}).limit(5);
@@ -118,7 +141,6 @@ export class PaymentsService {
     }
   }
 
-  // Obtener todos los pagos de un profesional
   async getPaymentsByProfessional(professionalId: string): Promise<Payment[]> {
     return await this.paymentModel
       .find({ professionalId: new Types.ObjectId(professionalId) })
@@ -128,7 +150,6 @@ export class PaymentsService {
       .exec();
   }
 
-  // Obtener estadísticas de pagos de un profesional
   async getPaymentStatsByProfessional(professionalId: string) {
     const payments = await this.paymentModel
       .find({
@@ -155,7 +176,6 @@ export class PaymentsService {
     };
   }
 
-  // Obtener pagos por método de pago
   async getPaymentsByMethod(
     professionalId: string,
     paymentMethod: string,
@@ -171,7 +191,6 @@ export class PaymentsService {
       .exec();
   }
 
-  // Obtener pagos por estado
   async getPaymentsByStatus(
     professionalId: string,
     status: string,
@@ -187,7 +206,6 @@ export class PaymentsService {
       .exec();
   }
 
-  // Obtener pagos por rango de fechas
   async getPaymentsByDateRange(
     professionalId: string,
     startDate: Date,
@@ -207,7 +225,6 @@ export class PaymentsService {
       .exec();
   }
 
-  // Método principal para obtener pagos y estadísticas del profesional autenticado
   async getMyPayments(professionalId: string) {
     try {
       if (!Types.ObjectId.isValid(professionalId)) {
@@ -216,23 +233,17 @@ export class PaymentsService {
 
       const professionalObjectId = new Types.ObjectId(professionalId);
 
-      // 🚨 CORRECCIÓN CLAVE: Usamos .populate() para traer los datos del cliente.
       const allPayments = await this.paymentModel
         .find({
           professionalId: professionalObjectId,
         })
-        // Asumimos que 'clientId' es la referencia al modelo 'User'
-        // y queremos traer el campo 'name'.
         .populate('clientId', 'name email')
-        .exec(); // Usar .exec() para asegurar que la promesa se ejecute
+        .exec();
 
       console.log('🔍 SERVICE - Pagos encontrados:', allPayments.length);
 
-      // Calcular stats (Tu lógica de cálculo se mantiene)
-      // ... (El cálculo de fechas y las variables now, todayStart, etc.) ...
       const now = new Date();
       const todayStart = new Date(now.setHours(0, 0, 0, 0));
-      // Nota: Al usar now.setHours(0,0,0,0) se modifica 'now'. Se recomienda clonar la fecha antes de usar setDate.
       const weekStart = new Date(
         new Date(now).setDate(now.getDate() - now.getDay()),
       ).setHours(0, 0, 0, 0);
