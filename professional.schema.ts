@@ -7,13 +7,13 @@ export type ProfessionalDocument = Professional & Document;
 @Schema({ timestamps: true })
 export class Professional {
   @Prop({ required: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true, unique: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true })
-  specialty: string;
+  specialty!: string;
 
   @Prop()
   phone?: string;
@@ -25,7 +25,7 @@ export class Professional {
   city?: string;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Service' }] })
-  services: Types.ObjectId[];
+  services!: Types.ObjectId[];
 
   @Prop({
     type: {
@@ -38,7 +38,7 @@ export class Professional {
       sunday: [{ start: String, end: String }],
     },
   })
-  availability: Record<
+  availability!: Record<
     string,
     {
       start: string;
@@ -56,13 +56,33 @@ export class Professional {
   photo?: string;
 
   @Prop({ default: 0 })
-  rating: number;
+  rating!: number;
 
   @Prop({ default: 0 })
-  totalRatings: number;
+  totalRatings!: number;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  user: Types.ObjectId;
+  user!: Types.ObjectId;
+
+  @Prop({
+    type: [
+      {
+        cardNumber: String,
+        cardholderName: String,
+        expiryDate: String,
+        cvv: String,
+        savedAt: Date,
+      },
+    ],
+    default: [],
+  })
+  paymentMethods!: Array<{
+    cardNumber: string;
+    cardholderName: string;
+    expiryDate: string;
+    cvv: string;
+    savedAt: Date;
+  }>;
 }
 
 export const ProfessionalSchema = SchemaFactory.createForClass(Professional);

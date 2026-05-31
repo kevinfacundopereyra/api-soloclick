@@ -21,6 +21,26 @@ export class User extends Document {
 
   @Prop({ required: true })
   userType: string;
+
+  @Prop({
+    type: [
+      {
+        cardNumber: String,
+        cardholderName: String,
+        expiryDate: String,
+        cvv: String,
+        savedAt: Date,
+      },
+    ],
+    default: [],
+  })
+  paymentMethods: Array<{
+    cardNumber: string;
+    cardholderName: string;
+    expiryDate: string;
+    cvv: string;
+    savedAt: Date;
+  }>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

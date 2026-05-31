@@ -146,10 +146,21 @@ export class ProfessionalsController {
     @Request() req,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    return this.professionalsService.updateProfile(
-      req.user.sub,
-      updateProfileDto,
-    );
+    console.log('👤 PUT /professionals/profile');
+    console.log('👤 Usuario autenticado ID:', req.user?.sub);
+    console.log('👤 DTO recibido:', updateProfileDto);
+    
+    try {
+      const result = await this.professionalsService.updateProfile(
+        req.user.sub,
+        updateProfileDto,
+      );
+      console.log('✅ Profile actualizado exitosamente');
+      return result;
+    } catch (error) {
+      console.error('❌ Error en updateProfile controller:', error);
+      throw error;
+    }
   }
 
   // POST /professionals/upload-images - Subir imágenes

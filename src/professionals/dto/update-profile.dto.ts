@@ -8,6 +8,20 @@ import {
 import { LocationDto } from './create-professional.dto'; // Reutilizamos el DTO de ubicación
 import { Type } from 'class-transformer';
 
+export class PaymentMethodDto {
+  @IsString()
+  cardNumber: string;
+
+  @IsString()
+  cardholderName: string;
+
+  @IsString()
+  expiryDate: string;
+
+  @IsString()
+  cvv: string;
+}
+
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
@@ -39,4 +53,10 @@ export class UpdateProfileDto {
   @ValidateNested({ each: true })
   @Type(() => LocationDto)
   locations?: LocationDto[]; // El '?' también indica que es opcional en TypeScript.
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PaymentMethodDto)
+  paymentMethods?: PaymentMethodDto[];
 }
