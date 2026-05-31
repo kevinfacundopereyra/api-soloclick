@@ -28,4 +28,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   isProfileComplete?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  paymentMethods?: any[];
 }

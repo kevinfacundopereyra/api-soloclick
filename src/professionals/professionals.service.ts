@@ -206,20 +206,35 @@ export class ProfessionalsService {
   // Método para actualizar el perfil del profesional
   async updateProfile(id: string, updateProfileDto: UpdateProfileDto): Promise<Professional> {
     try {
-      const updateData: any = {};
+      console.log('📝 Iniciando updateProfile con ID:', id);
+      console.log('📝 updateProfileDto:', updateProfileDto);
+      
+      const updateSetData: any = {};
+      const updatePushData: any = {};
       
       // Actualizar campos directos del perfil
       if (updateProfileDto.description !== undefined) {
-        updateData.description = updateProfileDto.description;
+        updateSetData.description = updateProfileDto.description;
       }
       if (updateProfileDto.address !== undefined) {
-        updateData.address = updateProfileDto.address;
+        updateSetData.address = updateProfileDto.address;
       }
       if (updateProfileDto.workingHours) {
-        updateData.workingHours = updateProfileDto.workingHours;
+        updateSetData.workingHours = updateProfileDto.workingHours;
       }
       if (updateProfileDto.images) {
-        updateData.images = updateProfileDto.images;
+        updateSetData.images = updateProfileDto.images;
+      }
+
+      // Manejar métodos de pago
+      if (updateProfileDto.paymentMethods && updateProfileDto.paymentMethods.length > 0) {
+        console.log('💳 Agregando métodos de pago:', updateProfileDto.paymentMethods.length);
+        const paymentMethodsWithDate = updateProfileDto.paymentMethods.map(method => ({
+          ...method,
+          savedAt: new Date(),
+        }));
+        updatePushData.paymentMethods = { $each: paymentMethodsWithDate };
+        console.log('💳 Métodos de pago a guardar:', paymentMethodsWithDate);
       }
 
       // Verificar si el perfil está completo
@@ -230,21 +245,32 @@ export class ProfessionalsService {
           (updateProfileDto.address || professional.address) &&
           (updateProfileDto.workingHours || professional.workingHours)
         );
-        updateData.profileCompleted = isComplete;
+        updateSetData.profileCompleted = isComplete;
       }
+
+      // Construir la query de actualización
+      const updateQuery: any = { $set: updateSetData };
+      if (Object.keys(updatePushData).length > 0) {
+        updateQuery.$push = updatePushData;
+      }
+
+      console.log('🔄 Ejecutando update con query:', JSON.stringify(updateQuery, null, 2));
 
       const updated = await this.professionalModel.findByIdAndUpdate(
         id,
-        { $set: updateData },
+        updateQuery,
         { new: true }
       );
 
       if (!updated) {
+        console.error('❌ Professional no encontrado con ID:', id);
         throw new NotFoundException('Professional not found');
       }
 
+      console.log('✅ Professional actualizado:', updated._id);
       return updated;
     } catch (error) {
+      console.error('❌ Error en updateProfile:', error);
       if (error instanceof NotFoundException) {
         throw error;
       }

@@ -29,7 +29,7 @@ export class UsersService {
 }
  */
 
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
@@ -81,7 +81,7 @@ export class UsersService {
       );
 
       return { user: savedUser, token };
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -94,6 +94,27 @@ export class UsersService {
       return await this.userModel.findOne({ email }).exec();
     } catch (error) {
       throw new BadRequestException('Error finding user by email');
+    }
+  }
+
+  async updateUserPaymentMethods(userId: string, paymentMethods: any[]): Promise<User> {
+    try {
+      const updatedUser = await this.userModel.findByIdAndUpdate(
+        userId,
+        { $set: { paymentMethods } },
+        { new: true, runValidators: true }
+      ).exec();
+
+      if (!updatedUser) {
+        throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
+      }
+
+      return updatedUser;
+    } catch (error: any) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error actualizando los métodos de pago: ' + error.message);
     }
   }
 }
