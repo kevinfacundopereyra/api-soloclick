@@ -9,12 +9,43 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose'; // <-- Types es necesario
 import { Review } from './review.schema';
+import { Professional } from '../professionals/schemas/professional.schema';
 
 @Injectable()
 export class ReviewsService {
   private readonly logger = new Logger(ReviewsService.name);
 
-  constructor(@InjectModel(Review.name) private reviewModel: Model<Review>) {}
+  constructor(
+    @InjectModel(Review.name) private reviewModel: Model<Review>,
+    @InjectModel(Professional.name) private professionalModel: Model<Professional>,
+  ) {}
+
+  private async updateProfessionalRating(professionalId: string) {
+    if (!Types.ObjectId.isValid(professionalId)) {
+      this.logger.warn(`No se puede actualizar el rating, ID inválido: ${professionalId}`);
+      return;
+    }
+
+    const professionalObjectId = new Types.ObjectId(professionalId);
+    const aggregation = await this.reviewModel
+      .aggregate([
+        { $match: { professionalId: professionalObjectId } },
+        {
+          $group: {
+            _id: '$professionalId',
+            avgRating: { $avg: '$rating' },
+            totalReviews: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+
+    const avgRating = aggregation.length > 0 ? aggregation[0].avgRating : null;
+
+    await this.professionalModel.findByIdAndUpdate(professionalId, {
+      rating: avgRating,
+    });
+  }
 
   async create(
     professionalId: string,
@@ -50,6 +81,9 @@ export class ReviewsService {
 
       const savedReview = await newReview.save();
       this.logger.log(`Reseña creada con éxito. ID: ${savedReview._id}`);
+
+      await this.updateProfessionalRating(professionalId);
+
       return savedReview;
     } catch (error) {
       this.logger.error(
