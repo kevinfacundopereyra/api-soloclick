@@ -4,12 +4,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ReviewsService } from './review.services';
 import { ReviewsController } from './review.controller';
 import { Review, ReviewSchema } from './review.schema';
+import { Professional, ProfessionalSchema } from '../professionals/schemas/professional.schema';
 // Importa el módulo de autenticación para que JwtAuthGuard funcione, si es necesario.
 // import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Review.name, schema: ReviewSchema }]),
+    MongooseModule.forFeature([{ name: Professional.name, schema: ProfessionalSchema }]),
     // AuthModule, // Descomentar si tu JwtAuthGuard lo requiere
   ],
   controllers: [ReviewsController],

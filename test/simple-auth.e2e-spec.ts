@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import supertest from 'supertest';
 import { AppModule } from '../src/app.module';
-import { request } from 'axios';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -25,7 +24,7 @@ describe('Auth (e2e)', () => {
       userType: 'client'
     };
 
-    return request(app.getHttpServer())
+    return supertest(app.getHttpServer())
       .post('/users')
       .send(userData)
       .expect(201)
@@ -41,7 +40,7 @@ describe('Auth (e2e)', () => {
       password: 'Test123!'
     };
 
-    return request(app.getHttpServer())
+    return supertest(app.getHttpServer())
       .post('/api/auth/login')
       .send(loginData)
       .expect(200)
