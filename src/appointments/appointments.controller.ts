@@ -8,6 +8,22 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class AppointmentsController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
+  // ✅ RUTAS ESPECÍFICAS PRIMERO (antes de rutas parametrizadas)
+  @UseGuards(JwtAuthGuard)
+  @Get('my') // GET /appointments/my
+  async getMyAppointments(@Request() req: any) {
+    const clientId = req.user.sub;
+    return this.appointmentService.findByClient(clientId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('professional') // GET /appointments/professional
+  async getProfessionalAppointments(@Request() req: any) {
+    const professionalId = req.user.sub;
+    return this.appointmentService.findByProfessional(professionalId);
+  }
+
+  // ✅ RUTAS PARAMETRIZADAS DESPUÉS
   @Get()
   findAll() {
     return this.appointmentService.findAll();
@@ -32,16 +48,9 @@ export class AppointmentsController {
     return this.appointmentService.create(createAppointmentDto);
   }
 
-  @Get('client/:clientId') // GET /appointments/client/:clientId
+  @Get('client/:clientId')
   findByClient(@Param('clientId') clientId: string) {
     return this.appointmentService.findByClient(clientId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('professional') // GET /appointments/professional (usando JWT)
-  async getProfessionalAppointments(@Request() req: any) {
-    const professionalId = req.user.sub; // El ID viene del JWT como 'sub'
-    return this.appointmentService.findByProfessional(professionalId);
   }
 
   @Delete(':id')

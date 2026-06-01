@@ -34,7 +34,7 @@ export class AppointmentService {
   async findByClient(clientId: string): Promise<Appointment[]> {
     return this.appointmentModel
       .find({
-        clientId: clientId, // o client: clientId según tu modelo
+        user: clientId, // ✅ Buscar por 'user' (que es donde se guarda)
       })
       .populate('professional', 'name specialty city')
       .populate('services', 'name price duration')
