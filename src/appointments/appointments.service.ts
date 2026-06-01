@@ -44,12 +44,19 @@ export class AppointmentService {
   async create(
     createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
+    console.log('🔍 [AppointmentService.create] Iniciando creación de cita');
+    console.log('📋 [AppointmentService.create] Datos recibidos:', JSON.stringify(createAppointmentDto, null, 2));
+    
     const professional = await this.professionalModel.findById(
       createAppointmentDto.professionalId,
     );
+    
     if (!professional) {
+      console.error('❌ [AppointmentService.create] Profesional no encontrado:', createAppointmentDto.professionalId);
       throw new NotFoundException('Professional not found');
     }
+    
+    console.log('✅ [AppointmentService.create] Profesional encontrado:', professional.name, 'Email:', professional.email);
 
     // Verificar si hay superposición de citas en la misma fecha
     const appointmentDate = new Date(createAppointmentDto.date);
@@ -130,30 +137,65 @@ export class AppointmentService {
       status: 'pending',
     });
 
+    console.log('📝 [AppointmentService.create] Appointment object to save:', {
+      user: appointment.user,
+      professional: appointment.professional,
+      date: appointment.date,
+      time: appointment.time,
+    });
+
+    console.log('💾 [AppointmentService.create] Guardando cita en BD...');
     const saved = await appointment.save();
+    console.log('✅ [AppointmentService.create] Cita guardada:', saved._id);
+    console.log('✅ [AppointmentService.create] Usuario en cita guardada:', saved.user);
 
     // ✅ AGREGAR - Enviar notificaciones mejoradas
     try {
+      console.log('📧 [AppointmentService.create] Iniciando envío de notificaciones...');
+      
       // Notificación al profesional (SIEMPRE se envía)
       if (professional?.email) {
+        console.log('✅ [AppointmentService.create] Professional tiene email:', professional.email);
         console.log('📧 Enviando notificación de nueva cita al profesional...');
         const professionalMessage = `Nueva cita agendada para el ${createAppointmentDto.date} a las ${createAppointmentDto.time}. Cliente: ${saved.user ? 'Usuario registrado' : 'Cliente invitado'}`;
+        
+        console.log('🔄 [AppointmentService.create] Llamando notifyProfessional...');
         await this.notificationsService.notifyProfessional(
           professional.email,
-          professionalMessage
+          professionalMessage,
         );
+        console.log('✅ [AppointmentService.create] Email al profesional enviado exitosamente');
+      } else {
+        console.warn('⚠️ [AppointmentService.create] Professional sin email:', professional?.email);
       }
 
       // Notificación al cliente registrado (solo si tiene user)
       if (saved.user) {
+        console.log('📧 [AppointmentService.create] Buscando datos del usuario:', saved.user);
         const user = await this.userModel.findById(saved.user);
+        
+        console.log('📋 [AppointmentService.create] Datos del usuario encontrado:', {
+          id: user?._id,
+          name: user?.name,
+          email: user?.email,
+          emailField: user?.email || 'NO TIENE EMAIL',
+          allKeys: user ? Object.keys(user.toObject ? user.toObject() : user) : 'usuario no encontrado',
+        });
+        
         if (user?.email) {
+          console.log('✅ [AppointmentService.create] Usuario tiene email:', user.email);
           console.log('📧 Enviando confirmación al cliente...');
           await this.notificationsService.notifyUser(
             user.email,
-            `Tu cita ha sido agendada para el ${createAppointmentDto.date} a las ${createAppointmentDto.time}. Status: Pendiente de confirmación.`
+            `Tu cita ha sido agendada para el ${createAppointmentDto.date} a las ${createAppointmentDto.time}. Status: Pendiente de confirmación.`,
           );
+          console.log('✅ [AppointmentService.create] Email al usuario enviado exitosamente');
+        } else {
+          console.warn('⚠️ [AppointmentService.create] Usuario sin email:', user?.email);
+          console.warn('⚠️ [AppointmentService.create] Usuario completo:', JSON.stringify(user?.toObject ? user.toObject() : user));
         }
+      } else {
+        console.warn('⚠️ [AppointmentService.create] Sin usuario asociado a la cita');
       }
     } catch (emailError) {
       console.error('❌ Error enviando notificaciones:', emailError);

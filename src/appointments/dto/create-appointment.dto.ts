@@ -10,7 +10,7 @@ import {
 export class CreateAppointmentDto {
   @IsOptional()
   @IsMongoId()
-  readonly user?: string; // ID del usuario (opcional, se puede obtener del token)
+  user?: string; // ID del usuario (opcional, se puede obtener del token)
 
   @IsString()
   professionalId: string;
