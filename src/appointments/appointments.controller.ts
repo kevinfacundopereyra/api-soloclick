@@ -15,10 +15,19 @@ export class AppointmentsController {
 
   @Post()
   create(@Body() createAppointmentDto: CreateAppointmentDto) {
-    // ✅ AGREGAR - Mapear clientId a userId si viene
-    if (createAppointmentDto.clientId && !createAppointmentDto.userId) {
-      createAppointmentDto.userId = createAppointmentDto.clientId;
+    // ✅ Mapear clientId a user si viene
+    if (createAppointmentDto.clientId && !createAppointmentDto.user) {
+      createAppointmentDto.user = createAppointmentDto.clientId;
     }
+    if (createAppointmentDto.userId && !createAppointmentDto.user) {
+      createAppointmentDto.user = createAppointmentDto.userId;
+    }
+
+    console.log('📍 [AppointmentsController] POST /appointments - Mapped data:', {
+      user: createAppointmentDto.user,
+      clientId: createAppointmentDto.clientId,
+      userId: createAppointmentDto.userId,
+    });
 
     return this.appointmentService.create(createAppointmentDto);
   }
