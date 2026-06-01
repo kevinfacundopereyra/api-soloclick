@@ -37,6 +37,8 @@ import { Model } from 'mongoose';
 import { Professional } from './schemas/professional.schema';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ServicesService } from '../services/services.service';
+import { CreateServiceDto } from '../services/dto/create-service.dto';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
@@ -44,6 +46,7 @@ export class ProfessionalsService {
   constructor(
     @InjectModel('Professional')
     private readonly professionalModel: Model<Professional>,
+    private readonly servicesService: ServicesService,
   ) {}
 
   async findAll(): Promise<Professional[]> {
@@ -117,6 +120,26 @@ export class ProfessionalsService {
       const professional = new this.professionalModel(professionalData);
       const savedProfessional = await professional.save();
 
+      // Crear servicios asociadas al profesional si se enviaron
+      if (createProfessionalDto.services && createProfessionalDto.services.length) {
+        const servicesToCreate = createProfessionalDto.services.map(
+          (service): CreateServiceDto => ({
+            name: service.name,
+            description: service.description,
+            price: service.price,
+            duration: service.duration,
+            category: service.category,
+            isActive: true,
+          }),
+        );
+
+        await Promise.all(
+          servicesToCreate.map((service) =>
+            this.servicesService.create(String(savedProfessional._id), service),
+          ),
+        );
+      }
+
       // Generar token JWT después del registro exitoso
       const token = jwt.sign(
         {
@@ -130,12 +153,13 @@ export class ProfessionalsService {
       );
 
       return { professional: savedProfessional, token };
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof ConflictException) {
         throw error;
       }
       throw new BadRequestException(
-        'Error creating professional: ' + error.message,
+        'Error creating professional: ' +
+          (error instanceof Error ? error.message : String(error)),
       );
     }
   }
@@ -250,8 +274,10 @@ export class ProfessionalsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new BadRequestException('Error updating profile: ' + errorMsg);
+      throw new BadRequestException(
+        'Error updating profile: ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   }
 
@@ -279,7 +305,7 @@ export class ProfessionalsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException('Error uploading images: ' + error.message);
+      throw new BadRequestException('Error uploading images: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 }

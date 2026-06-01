@@ -19,7 +19,7 @@ import {
 
 export class LocationDto {
   @IsString()
-  address: string;
+  address!: string;
 
   @IsString()
   @IsOptional()
@@ -27,38 +27,60 @@ export class LocationDto {
 
   @IsNumber()
   @IsNotEmpty()
-  latitude: number;
+  latitude!: number;
 
   @IsNumber()
   @IsNotEmpty()
-  longitude: number;
+  longitude!: number;
+}
+
+export class ServiceDto {
+  @IsString()
+  @IsNotEmpty()
+  readonly name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly description!: string;
+
+  @IsNumber()
+  @Min(0)
+  readonly price!: number;
+
+  @IsNumber()
+  @Min(1)
+  readonly duration!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  readonly category!: string;
 }
 
 export class CreateProfessionalDto {
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly name!: string;
 
   @IsEmail()
   @IsNotEmpty()
-  readonly email: string;
+  readonly email!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(6)
-  readonly password: string;
+  readonly password!: string;
 
   @IsString()
   @IsNotEmpty()
-  readonly phone: string;
+  readonly phone!: string;
 
   @IsString()
   @IsNotEmpty()
-  readonly city: string;
+  readonly city!: string;
 
   @IsString()
   @IsNotEmpty()
-  readonly specialty: string;
+  readonly specialty!: string;
 
   @IsEnum(['local', 'home'])
   @IsOptional()
@@ -93,5 +115,11 @@ export class CreateProfessionalDto {
   @IsArray()
   @ValidateNested({ each: true }) // Valida cada objeto dentro del array
   @Type(() => LocationDto)
-  locations: LocationDto[];
+  locations!: LocationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceDto)
+  readonly services?: ServiceDto[];
 }

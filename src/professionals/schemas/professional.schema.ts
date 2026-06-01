@@ -66,6 +66,9 @@ export class Professional extends Document {
   @Prop({ required: true })
   specialty: string;
 
+  @Prop({ type: Number, default: null })
+  rating?: number;
+
   @Prop({
     required: true,
     enum: ['local', 'home'],
