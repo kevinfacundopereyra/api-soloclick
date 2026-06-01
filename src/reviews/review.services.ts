@@ -1,5 +1,3 @@
-// src/reviews/reviews.service.ts
-
 import {
   Injectable,
   Logger,
@@ -7,7 +5,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose'; // <-- Types es necesario
+import { Model } from 'mongoose';
+import { ObjectId } from 'mongodb';
 import { Review } from './review.schema';
 import { Professional } from '../professionals/schemas/professional.schema';
 
@@ -21,12 +20,12 @@ export class ReviewsService {
   ) {}
 
   private async updateProfessionalRating(professionalId: string) {
-    if (!Types.ObjectId.isValid(professionalId)) {
+    if (!ObjectId.isValid(professionalId)) {
       this.logger.warn(`No se puede actualizar el rating, ID inválido: ${professionalId}`);
       return;
     }
 
-    const professionalObjectId = new Types.ObjectId(professionalId);
+    const professionalObjectId = new ObjectId(professionalId);
     const aggregation = await this.reviewModel
       .aggregate([
         { $match: { professionalId: professionalObjectId } },
@@ -60,16 +59,16 @@ export class ReviewsService {
 
     try {
       if (
-        !Types.ObjectId.isValid(professionalId) ||
-        !Types.ObjectId.isValid(userId)
+        !ObjectId.isValid(professionalId) ||
+        !ObjectId.isValid(userId)
       ) {
         throw new BadRequestException(
           'ID de profesional o usuario no tiene un formato válido.',
         );
       }
 
-      const professionalObjectId = new Types.ObjectId(professionalId);
-      const userObjectId = new Types.ObjectId(userId);
+      const professionalObjectId = new ObjectId(professionalId);
+      const userObjectId = new ObjectId(userId);
 
       const newReview = new this.reviewModel({
         professionalId: professionalObjectId,
@@ -104,13 +103,13 @@ export class ReviewsService {
   async findByProfessionalId(professionalId: string): Promise<Review[]> {
     try {
       // 1. Validamos la cadena ID antes de la conversión
-      if (!Types.ObjectId.isValid(professionalId)) {
+      if (!ObjectId.isValid(professionalId)) {
         this.logger.warn(`ID de profesional inválido: ${professionalId}`);
         return []; // Devolvemos un array vacío si el ID no es válido
       }
 
       // 2. CONVERTIMOS LA CADENA A OBJECTID
-      const professionalObjectId = new Types.ObjectId(professionalId);
+      const professionalObjectId = new ObjectId(professionalId);
 
       // 3. BUSCAMOS usando el ObjectId
       const reviews = await this.reviewModel

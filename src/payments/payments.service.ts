@@ -4,7 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
+import { ObjectId } from 'mongodb';
 import { Appointment } from '../appointments/schemas/appointment.schema';
 import { Payment, PaymentDocument } from './schemas/payment.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -121,7 +122,7 @@ export class PaymentsService {
   // Obtener todos los pagos de un profesional
   async getPaymentsByProfessional(professionalId: string): Promise<Payment[]> {
     return await this.paymentModel
-      .find({ professionalId: new Types.ObjectId(professionalId) })
+      .find({ professionalId: new ObjectId(professionalId) })
       .populate('clientId', 'name email')
       .populate('appointmentId', 'date status')
       .sort({ paymentDate: -1 })
@@ -132,7 +133,7 @@ export class PaymentsService {
   async getPaymentStatsByProfessional(professionalId: string) {
     const payments = await this.paymentModel
       .find({
-        professionalId: new Types.ObjectId(professionalId),
+        professionalId: new ObjectId(professionalId),
         status: 'completed',
       })
       .exec();
@@ -162,7 +163,7 @@ export class PaymentsService {
   ): Promise<Payment[]> {
     return await this.paymentModel
       .find({
-        professionalId: new Types.ObjectId(professionalId),
+        professionalId: new ObjectId(professionalId),
         paymentMethod,
       })
       .populate('clientId', 'name email')
@@ -178,7 +179,7 @@ export class PaymentsService {
   ): Promise<Payment[]> {
     return await this.paymentModel
       .find({
-        professionalId: new Types.ObjectId(professionalId),
+        professionalId: new ObjectId(professionalId),
         status,
       })
       .populate('clientId', 'name email')
@@ -195,7 +196,7 @@ export class PaymentsService {
   ): Promise<Payment[]> {
     return await this.paymentModel
       .find({
-        professionalId: new Types.ObjectId(professionalId),
+        professionalId: new ObjectId(professionalId),
         paymentDate: {
           $gte: startDate,
           $lte: endDate,
@@ -210,11 +211,11 @@ export class PaymentsService {
   // Método principal para obtener pagos y estadísticas del profesional autenticado
   async getMyPayments(professionalId: string) {
     try {
-      if (!Types.ObjectId.isValid(professionalId)) {
+      if (!ObjectId.isValid(professionalId)) {
         throw new BadRequestException('El ID del profesional no es válido.');
       }
 
-      const professionalObjectId = new Types.ObjectId(professionalId);
+      const professionalObjectId = new ObjectId(professionalId);
 
       // 🚨 CORRECCIÓN CLAVE: Usamos .populate() para traer los datos del cliente.
       const allPayments = await this.paymentModel
